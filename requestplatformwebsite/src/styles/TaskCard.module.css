@@ -1,0 +1,13 @@
+.card { padding: 16px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.titleBox { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.title { margin: 0; font-size: 1.05rem; }
+.tags { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.tag { padding: 4px 8px; border-radius: 999px; font-size: 12px; letter-spacing: 0.4px; border: 1px solid #2c2c2c; }
+.subteam { background: rgba(0,166,81,0.08); color: var(--accent); border-color: rgba(0,166,81,0.25); }
+.low { background: #2a2a2a; color: #c9c9c9; }
+.medium { background: #3a3000; color: #f0c02e; border-color: #5a4700; }
+.high { background: #3a0000; color: #ff8080; border-color: #5a0000; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.desc { margin: 10px 0 6px; color: var(--text-2); }
+.meta { display: flex; gap: 16px; color: #9a9a9a; font-size: 12px; flex-wrap: wrap; }
