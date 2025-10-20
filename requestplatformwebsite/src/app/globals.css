@@ -1,0 +1,65 @@
+/*tentative fix front end to look nicer later */
+:root {
+  --bg: #121212;
+  --bg-darker: #0E0E0E; /* for navbar */
+  --panel: #1E1E1E;
+  --text: #FFFFFF;
+  --text-2: #B0B0B0;
+  --accent: #00A651;
+  --accent-hover: #00C46A;
+  --danger: #FF4D4D;
+  --radius: 10px;
+  --shadow: 0 0 0.5rem rgba(0, 166, 81, 0.25), 0 0 0.15rem rgba(255,255,255,0.07);
+  --transition: 0.25s ease;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* text font/color setup */
+h1, h2, h3 { font-weight: 700; letter-spacing: 0.2px; }
+p { color: var(--text-2); }
+
+/*DONT DELETE prevents text from behind hidden under navbar on navigation click*/
+section { scroll-margin-top: 84px; }
+
+/* Spacing control */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+/*Button styling*/
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; border-radius: var(--radius); border: 1px solid #2a2a2a;
+  background: #191919; color: var(--text); padding: 10px 14px;
+  text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+  transition: var(--transition); cursor: pointer;
+}
+.btn:hover { border-color: var(--accent-hover); box-shadow: var(--shadow); color: var(--accent-hover); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #041d12; }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #041d12; }
+.btn.ghost { background: transparent; }
+
+/*Panel styling*/
+.panel { background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar Front end fix to match website colour scheme */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
