@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar';
 import FilterBar from '@/components/FilterBar';
 import TaskBoard from '@/components/TaskBoard';
 import AddTaskModal from '@/components/AddTaskModal';
+import ArchivedSection from '@/components/ArchivedSection';
 import { TaskItem, Subteam } from '@/lib/types';
 import { useMemo, useState, useEffect } from 'react';
 import { useDatabase } from '@/lib/useDatabase';
@@ -15,7 +16,7 @@ export default function Page() {
   const [editing, setEditing] = useState<TaskItem | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
-  const { tasks, loading, upsertTask, toggleTask, deleteTask } = useDatabase();
+  const { tasks, loading, upsertTask, toggleTask, deleteTask, archiveTask } = useDatabase();
 
   const filtered = useMemo(() => {
     let result = tasks;
@@ -24,6 +25,9 @@ export default function Page() {
     if (subteamFilter !== 'All') result = result.filter(t => t.subteam === subteamFilter);
     return result;
   }, [tasks, statusFilter, subteamFilter]);
+
+  const archivedTasks = useMemo(() => tasks.filter(t => t.archived), [tasks]);
+  const activeTasks = useMemo(() => filtered.filter(t => !t.archived), [filtered]);
 
   const handleUpsert = async (payload: Omit<TaskItem, 'id' | 'createdAt' | 'completed'> & { id?: string }) => {
     await upsertTask(payload);
@@ -39,6 +43,10 @@ export default function Page() {
 
   const handleEdit = (t: TaskItem) => { setEditing(t); setOpen(true); };
   const handleDelete = async (id: string) => { await deleteTask(id); };
+
+  const handleArchive = async (id: string, archived: boolean) => {
+    await archiveTask(id, archived);
+  };
 
   if (!mounted || loading) {
     return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
@@ -71,6 +79,13 @@ export default function Page() {
             tasks={filtered}
             onToggle={handleToggle}
             onEdit={handleEdit}
+            onDelete={handleDelete}
+            onArchive={handleArchive}
+          />
+
+          <ArchivedSection
+            tasks={archivedTasks}
+            onArchive={handleArchive}
             onDelete={handleDelete}
           />
         </div>

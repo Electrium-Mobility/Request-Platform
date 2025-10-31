@@ -8,14 +8,16 @@ export default function TaskBoard({
   onToggle,
   onEdit,
   onDelete,
+  onArchive,
 }: {
   tasks: TaskItem[];
   onToggle: (id: string) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
+  onArchive: (id: string, archived: boolean) => void;
 }) {
   const uncompleted = tasks.filter(t => !t.completed);
-  const completed = tasks.filter(t => t.completed);
+  const completed = tasks.filter(t => t.completed && !t.archived);
   const unassigned = uncompleted.filter(t => !t.assignee);
   const assigned = uncompleted.filter(t => t.assignee);
 
@@ -35,6 +37,7 @@ export default function TaskBoard({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onArchive={onArchive}
             />
           ))}
         </div>
@@ -54,6 +57,7 @@ export default function TaskBoard({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onArchive={onArchive}
             />
           ))}
         </div>
@@ -73,6 +77,7 @@ export default function TaskBoard({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onArchive={onArchive}
             />
           ))}
         </div>

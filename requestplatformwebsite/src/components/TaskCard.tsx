@@ -24,16 +24,34 @@ function IconTrash() {
   );
 }
 
+function IconArchive() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.icon} aria-hidden="true">
+      <path d="M3 3h18v4H3V3Zm2 6h14v12H5V9Zm7 3-3 3h2v3h2v-3h2l-3-3Z" />
+    </svg>
+  );
+}
+
+function IconUnarchive() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.icon} aria-hidden="true">
+      <path d="M3 3h18v4H3V3Zm2 6h14v12H5V9Zm7 5 3-3h-2v-3h-2v3h-2l3 3Z" />
+    </svg>
+  );
+}
+
 export default function TaskCard({
   task,
   onToggle,
   onEdit,
   onDelete,
+  onArchive,
 }: {
   task: TaskItem;
   onToggle: (id: string) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
+  onArchive: (id: string, archived: boolean) => void;
 }) {
   return (
     <div className={`panel ${styles.card}`} style={{ animation: 'fadeInUp 0.35s ease both' }}>
@@ -48,13 +66,35 @@ export default function TaskCard({
           </div>
         </div>
         <div className={styles.actions}>
-          <button
-            className="btn ghost"
-            title={task.completed ? 'Mark uncompleted' : 'Mark completed'}
-            onClick={() => onToggle(task.id)}
-          >
-            <IconCheck /> {task.completed ? 'Uncomplete' : 'Complete'}
-          </button>
+          {!task.archived && (
+            <>
+              <button
+                className="btn ghost"
+                title={task.completed ? 'Mark uncompleted' : 'Mark completed'}
+                onClick={() => onToggle(task.id)}
+              >
+                <IconCheck /> {task.completed ? 'Uncomplete' : 'Complete'}
+              </button>
+              {task.completed && (
+                <button
+                  className="btn ghost"
+                  title="Archive Task"
+                  onClick={() => onArchive(task.id, true)}
+                >
+                <IconArchive /> Archive
+                </button>
+              )}
+            </>
+          )}
+          {task.archived && (
+            <button
+              className="btn ghost"
+              title="Unarchive Task"
+              onClick={() => onArchive(task.id, false)}
+            >
+            <IconUnarchive /> Unarchive
+            </button>
+          )}
           <button
             className="btn ghost"
             title="Edit"
