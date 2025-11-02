@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname.startsWith("/login") ||
-    pathname.startsWith("/unauthorized") || 
+    pathname.startsWith("/unauthorized") ||
     pathname.match(/\.(?:png|jpg|jpeg|svg|gif|ico|webp)$/i)
   ) {
     return NextResponse.next();
