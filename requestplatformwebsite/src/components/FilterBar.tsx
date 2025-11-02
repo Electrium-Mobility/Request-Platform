@@ -4,21 +4,28 @@ import { Subteam } from '@/lib/types';
 
 type StatusFilter = 'All' | 'Completed' | 'Uncompleted';
 
+type Props = {
+  statusFilter: StatusFilter;
+  subteamFilter: Subteam | 'All';
+  searchQuery: string;
+  onStatusChange: (f: StatusFilter) => void;
+  onSubteamChange: (s: Subteam | 'All') => void;
+  onSearchChange: (q: string) => void;
+};
+
 export default function FilterBar({
   statusFilter,
   subteamFilter,
+  searchQuery,
   onStatusChange,
   onSubteamChange,
-}: {
-  statusFilter: StatusFilter;
-  subteamFilter: Subteam | 'All';
-  onStatusChange: (f: StatusFilter) => void;
-  onSubteamChange: (s: Subteam | 'All') => void;
-}) {
+  onSearchChange,
+}: Props) {
+  const statuses: StatusFilter[] = ['All', 'Completed', 'Uncompleted'];
   const subteams: (Subteam | 'All')[] = ['All', 'Electrical', 'Finance', 'Firmware', 'Management', 'Marketing', 'Mechanical', 'Web Dev'];
 
   return (
-    <div className={`${styles.bar} panel`}>
+    <div className={styles.bar}>
       <label className={styles.label}>
         <span>Status</span>
         <select
@@ -26,9 +33,7 @@ export default function FilterBar({
           value={statusFilter}
           onChange={e => onStatusChange(e.target.value as StatusFilter)}
         >
-          <option>All</option>
-          <option>Completed</option>
-          <option>Uncompleted</option>
+          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
 
@@ -41,6 +46,18 @@ export default function FilterBar({
         >
           {subteams.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+      </label>
+
+      {/* Search on the right */}
+      <label className={styles.label} style={{ marginLeft: 'auto' }}>
+        <span>Search</span>
+        <input
+          className={styles.input}
+          type="text"
+          placeholder="Search tasks"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
       </label>
     </div>
   );
