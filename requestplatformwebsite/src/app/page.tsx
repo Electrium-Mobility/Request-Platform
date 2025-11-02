@@ -88,6 +88,9 @@ export default function Page() {
               const t = filteredTasks.find(x => x.id === id)
                 ?? /* fall back to full set if filtered out */ tasks.find(x => x.id === id);
 
+              if (!t) {
+                console.error(`Task with id "${id}" not found when toggling completion.`);
+              }
               const next = t ? !t.completed : true; // default to true if not found
               toggleTask(id, next).catch(console.error);
             }}
