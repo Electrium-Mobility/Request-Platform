@@ -22,7 +22,7 @@ export default function FilterBar({
   onSearchChange,
 }: Props) {
   const statuses: StatusFilter[] = ['All', 'Completed', 'Uncompleted'];
-  const subteams: (Subteam | 'All')[] = ['All','Electrical','Finance','Firmware','Management','Marketing','Mechanical','Web Dev'];
+  const subteams: (Subteam | 'All')[] = ['All', 'Electrical', 'Finance', 'Firmware', 'Management', 'Marketing', 'Mechanical', 'Web Dev'];
 
   return (
     <div className={styles.bar}>
