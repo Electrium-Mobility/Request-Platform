@@ -40,7 +40,7 @@
 }
 
 .input::placeholder {
-  font-family: inherit;  
+  font-family: inherit;
   color: var(--text-3);
 }
 
