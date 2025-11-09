@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import FilterBar from '@/components/FilterBar';
 import TaskBoard from '@/components/TaskBoard';
 import AddTaskModal from '@/components/AddTaskModal';
+import ArchivedSection from '@/components/ArchivedSection';
 import { TaskItem, Subteam } from '@/lib/types';
 import { useDatabase } from '@/lib/useDatabase';
 
@@ -23,7 +24,7 @@ export default function Page() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TaskItem | null>(null);
 
-  const { tasks, upsertTask, toggleTask, deleteTask } = useDatabase();
+  const { tasks, upsertTask, toggleTask, deleteTask, archiveTask } = useDatabase();
 
   useEffect(() => {
     setMounted(true);
@@ -55,12 +56,19 @@ export default function Page() {
     });
   }, [tasks, statusFilter, subteamFilter, searchQuery]);
 
+  const archivedTasks = useMemo(() => tasks.filter(t => t.archived), [tasks]);
+  const activeTasks = useMemo(() => filteredTasks.filter(t => !t.archived), [filteredTasks]);
+
   const handleUpsert = async (
     payload: Omit<TaskItem, 'id' | 'createdAt' | 'completed'> & { id?: string }
   ) => {
     await upsertTask(payload);
     setOpen(false);
     setEditing(null);
+  };
+
+  const handleArchive = async (id: string, archived: boolean) => {
+    await archiveTask(id, archived);
   };
 
   // Wait for hydration
@@ -146,6 +154,13 @@ export default function Page() {
               toggleTask(id, next).catch(console.error);
             }}
             onEdit={(t) => { setEditing(t); setOpen(true); }}
+            onDelete={deleteTask}
+            onArchive={handleArchive}
+          />
+
+          <ArchivedSection
+            tasks={archivedTasks}
+            onArchive={handleArchive}
             onDelete={deleteTask}
           />
         </div>

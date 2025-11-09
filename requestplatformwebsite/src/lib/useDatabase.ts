@@ -16,6 +16,7 @@ function dbToTask(row: any): TaskItem {
     assignee: row.assignee ?? undefined,
     dueDate: row.due_date ?? undefined,
     completed: row.completed,
+    archived: row.archived ?? false,
     createdAt: row.created_at,
   };
 }
@@ -144,6 +145,20 @@ export function useDatabase() {
     if (error) console.error('[toggleTask]', error);
   }, []);
 
+  // Archive Task
+  const archiveTask = useCallback(async (id: string, archived: boolean) => {
+    setTasks(prev =>
+      prev.map(t => (t.id === id ? { ...t, archived } : t))
+    );
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({ archived })
+      .eq('id', id);
+
+    if (error) console.error('[archiveTask]', error);
+  }, []);
+
   // Delete task
   const deleteTask = useCallback(async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id)); // remove immediately
@@ -151,5 +166,5 @@ export function useDatabase() {
     if (error) console.error('[deleteTask]', error);
   }, []);
 
-  return { tasks, loading, upsertTask, toggleTask, deleteTask };
+  return { tasks, loading, upsertTask, toggleTask, deleteTask, archiveTask };
 }

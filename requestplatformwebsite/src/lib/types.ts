@@ -12,5 +12,6 @@ export interface TaskItem {
   assignee?: string;
   dueDate?: string;     //YYYYMMDD
   completed: boolean;
+  archived?: boolean;
   createdAt: string;    // timestamp
 }
