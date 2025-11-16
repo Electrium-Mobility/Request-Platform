@@ -49,3 +49,11 @@
 .grid::-webkit-scrollbar-thumb:hover {
   background: #333;
 }
+
+.icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
