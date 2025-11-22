@@ -1,6 +1,8 @@
 'use client';
+import { useState } from 'react';
 import styles from '@/styles/TaskCard.module.css';
 import { TaskItem } from '@/lib/types';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 function IconCheck() {
   return (
@@ -53,6 +55,21 @@ export default function TaskCard({
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <DeleteConfirmationModal
+        taskTitle={task.title}
+        horizontal={task.archived}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          onDelete(task.id);
+          setConfirming(false);
+        }}
+      />
+    );
+  }
   return (
     <div className={`panel ${styles.card}`} style={{ animation: 'fadeInUp 0.35s ease both' }}>
       <div className={styles.row}>
@@ -105,7 +122,7 @@ export default function TaskCard({
           <button
             className="btn ghost"
             title="Delete"
-            onClick={() => onDelete(task.id)}
+            onClick={() => setConfirming(true)}
           >
             <IconTrash /> Delete
           </button>
