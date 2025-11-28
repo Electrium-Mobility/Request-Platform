@@ -1,0 +1,51 @@
+.bar {
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  min-height: 56px;
+}
+.count {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+.select {
+  background: #151515;
+  color: var(--text);
+  border: 1px solid #2a2a2a;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  outline: none;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+.select:focus {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
