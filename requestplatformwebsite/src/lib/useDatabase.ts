@@ -127,7 +127,7 @@ export function useDatabase() {
     if (update.subteam !== undefined) dbUpdate.subteam = update.subteam;
     if (update.priority !== undefined) dbUpdate.priority = update.priority;
     const { error } = await supabase
-      .from('tasks')
+      .from('TaskItem')
       .update(dbUpdate)
       .in('id', ids);
     if (error) console.error('[batchUpdateTasks]', error);

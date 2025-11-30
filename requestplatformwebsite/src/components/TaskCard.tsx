@@ -94,6 +94,7 @@ export default function TaskCard({
               checked={selected}
               onChange={e => onSelect(task.id, e.target.checked)}
               title="Select for batch operation"
+              aria-label={`Select ${task.title} for batch operation`}
               className={checkboxStyles.checkbox}
             />
           )}
