@@ -109,7 +109,6 @@ export default function TaskBoard({
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                       <TaskCard
-                        key={t.id || `assigned-${i}`}
                         task={t}
                         onToggle={onToggle}
                         onEdit={onEdit}
