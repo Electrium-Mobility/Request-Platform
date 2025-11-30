@@ -1,6 +1,7 @@
 "use client";
 import styles from "@/styles/Modal.module.css";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { TaskItem, Priority, Subteam } from "@/lib/types";
 
 /*Double check all subteams are here later*/
@@ -40,6 +41,17 @@ export default function AddTaskModal({
     assignee: "",
   });
 
+  const [userOptions, setUserOptions] = useState<{ id: string; username: string }[]>([]);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+
+  useEffect(() => {
+    if (toastVisible) {
+      const t = setTimeout(() => setToastVisible(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [toastVisible]);
+
   useEffect(() => {
     if (open && editing) {
       setTaskData({
@@ -62,6 +74,35 @@ export default function AddTaskModal({
         assignee: "",
       });
     }
+
+    const fetchUsers = async () => {
+      if (!open) return;
+      // Try multiple possible table names
+      const attempts: { table: string; select: string; map: (r: any) => { id: string; username: string } }[] = [
+        { table: "user", select: "id, username", map: (r) => ({ id: r.id, username: r.username }) },
+        { table: "users", select: "id, username", map: (r) => ({ id: r.id, username: r.username }) },
+        { table: "profiles", select: "id, full_name", map: (r) => ({ id: r.id, username: r.full_name }) },
+      ];
+      for (const attempt of attempts) {
+        const { data, error } = await supabase.from(attempt.table).select(attempt.select).limit(100);
+        if (!error && data && data.length) {
+          const mapped = data.map(attempt.map).filter((u) => u.username && u.username.trim());
+          setUserOptions(mapped);
+          if (editing?.assignee && editing.assignee.trim() && !mapped.find((u) => u.username === editing.assignee)) {
+            setUserOptions((prev) => [...prev, { id: "editing-temp", username: editing.assignee!.trim() }]);
+          }
+          return;
+        }
+      }
+      // fallback empty
+      setUserOptions((prev) => {
+        if (editing?.assignee && editing.assignee.trim()) {
+          return [{ id: "editing-temp", username: editing.assignee.trim() }];
+        }
+        return prev;
+      });
+    };
+    fetchUsers();
   }, [open, editing]);
 
   if (!open) return null;
@@ -69,6 +110,17 @@ export default function AddTaskModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskData.title.trim()) return;
+
+    if (taskData.dueDate) {
+      const today = new Date();
+      const selected = new Date(taskData.dueDate + "T00:00:00");
+      const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (selected < todayMid) {
+        setToastMsg("Due Date cannot be in the past.");
+        setToastVisible(true);
+        return;
+      }
+    }
 
     onSubmit({
       ...taskData,
@@ -86,7 +138,30 @@ export default function AddTaskModal({
         onClick={(e) => e.stopPropagation()}
         style={{ animation: "slideDown 0.25s ease both" }}
       >
-        <h2>{editing ? "Edit Task" : "Add Task"}</h2>
+        <div style={{ position: "relative", marginBottom: "0.75rem", minHeight: "1.75rem" }}>
+          <h2 style={{ margin: 0 }}>{editing ? "Edit Task" : "Add Task"}</h2>
+          {toastVisible && toastMsg && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                transform: "translateX(-50%)", /* center horizontally only */
+                background: "#ff4444",
+                color: "#fff",
+                padding: "0.4rem 0.75rem",
+                borderRadius: "4px",
+                fontSize: "0.75rem",
+                lineHeight: 1.1,
+                whiteSpace: "nowrap",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                animation: "fadeIn 0.15s ease",
+              }}
+            >
+              {toastMsg}
+            </div>
+          )}
+        </div>
         <form className={styles.form} onSubmit={handleSubmit}>
           <label>
             <span>Task Title</span>
@@ -162,13 +237,19 @@ export default function AddTaskModal({
             </label>
             <label>
               <span>Assign To</span>
-              <input
+              <select
                 value={taskData.assignee}
                 onChange={(e) =>
                   setTaskData({ ...taskData, assignee: e.target.value })
                 }
-                placeholder="Optional"
-              />
+              >
+                <option value="">Unassigned</option>
+                {userOptions.map((u) => (
+                  <option key={u.id} value={u.username}>
+                    {u.username}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
           <div className={styles.actions}>
