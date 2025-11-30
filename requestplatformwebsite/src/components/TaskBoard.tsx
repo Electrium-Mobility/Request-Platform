@@ -146,6 +146,7 @@ export default function TaskBoard({
                   onArchive={onArchive}
                 />
               ))}
+              {provided.placeholder}
             </div>
           </div>
         )}
