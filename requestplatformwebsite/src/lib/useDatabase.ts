@@ -122,7 +122,7 @@ export function useDatabase() {
         ? { ...t, ...update }
         : t
     ));
-    const dbUpdate: any = {};
+    const dbUpdate: Partial<Pick<TaskItem, 'completed' | 'subteam' | 'priority'>> = {};
     if (update.completed !== undefined) dbUpdate.completed = update.completed;
     if (update.subteam !== undefined) dbUpdate.subteam = update.subteam;
     if (update.priority !== undefined) dbUpdate.priority = update.priority;
