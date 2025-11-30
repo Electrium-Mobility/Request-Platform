@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Subteam, Priority } from '@/lib/types';
 import styles from '@/styles/BatchOperationsBar.module.css';
