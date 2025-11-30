@@ -36,7 +36,7 @@ export default function BatchOperationsBar({ selectedCount, onBatchUpdate, onCle
         <option value="completed">Completed</option>
         <option value="uncompleted">Uncompleted</option>
       </select>
-      <select className={styles.select} value={subteam} onChange={e => setSubteam(e.target.value as Subteam)}>
+      <select className={styles.select} value={subteam} onChange={e => setSubteam(e.target.value as Subteam | '')}>
         <option value="">Change Subteam</option>
         <option value="Electrical">Electrical</option>
         <option value="Finance">Finance</option>

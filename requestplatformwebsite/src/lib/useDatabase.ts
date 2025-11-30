@@ -117,24 +117,36 @@ export function useDatabase() {
   // Batch update multiple tasks
   const batchUpdateTasks = useCallback(async (ids: string[], update: { completed?: boolean; subteam?: Subteam; priority?: Priority }) => {
     if (ids.length === 0) return;
+    
+    // Store previous state for rollback
+    const previousTasks = tasks.filter(t => ids.includes(t.id));
+    
+    // Optimistic update
     setTasks(prev => prev.map(t =>
       ids.includes(t.id)
         ? { ...t, ...update }
         : t
     ));
+    
     const dbUpdate: Partial<Pick<TaskItem, 'completed' | 'subteam' | 'priority'>> = {};
     if (update.completed !== undefined) dbUpdate.completed = update.completed;
     if (update.subteam !== undefined) dbUpdate.subteam = update.subteam;
     if (update.priority !== undefined) dbUpdate.priority = update.priority;
+    
     const { error } = await supabase
       .from('TaskItem')
       .update(dbUpdate)
       .in('id', ids);
+      
     if (error) {
       console.error('[batchUpdateTasks]', error);
-      await fetchTasks();
+      // Rollback on error
+      setTasks(prev => prev.map(t => {
+        const prevTask = previousTasks.find(pt => pt.id === t.id);
+        return prevTask || t;
+      }));
     }
-  }, []);
+  }, [tasks]);
 
   // Create or update tasks
   const upsertTask = useCallback(async (payload: UpsertPayload) => {
