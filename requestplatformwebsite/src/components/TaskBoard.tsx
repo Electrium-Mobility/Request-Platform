@@ -151,7 +151,6 @@ export default function TaskBoard({
           </div>
         )}
       </Droppable>
-    
     </div>
   </DragDropContext>
   );
