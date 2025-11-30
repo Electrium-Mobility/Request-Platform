@@ -45,6 +45,19 @@ export default function AddTaskModal({
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
 
+  // Ensure dropdown does not show duplicate usernames (case/whitespace-insensitive)
+  const dedupeUsers = (items: { id: string; username: string }[]) => {
+    const seen = new Set<string>();
+    const result: { id: string; username: string }[] = [];
+    for (const u of items) {
+      const key = (u.username || "").trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      result.push({ id: u.id, username: u.username.trim() });
+    }
+    return result;
+  };
+
   useEffect(() => {
     if (toastVisible) {
       const t = setTimeout(() => setToastVisible(false), 3000);
@@ -75,34 +88,53 @@ export default function AddTaskModal({
       });
     }
 
+    let cancelled = false;
     const fetchUsers = async () => {
       if (!open) return;
-      // Try multiple possible table names
-      const attempts: { table: string; select: string; map: (r: any) => { id: string; username: string } }[] = [
-        { table: "user", select: "id, username", map: (r) => ({ id: r.id, username: r.username }) },
-        { table: "users", select: "id, username", map: (r) => ({ id: r.id, username: r.username }) },
-        { table: "profiles", select: "id, full_name", map: (r) => ({ id: r.id, username: r.full_name }) },
-      ];
-      for (const attempt of attempts) {
-        const { data, error } = await supabase.from(attempt.table).select(attempt.select).limit(100);
+      try {
+        const { data, error } = await supabase
+          .from("user")
+          .select("id, username")
+          .limit(100);
+        if (cancelled) return;
         if (!error && data && data.length) {
-          const mapped = data.map(attempt.map).filter((u) => u.username && u.username.trim());
-          setUserOptions(mapped);
-          if (editing?.assignee && editing.assignee.trim() && !mapped.find((u) => u.username === editing.assignee)) {
-            setUserOptions((prev) => [...prev, { id: "editing-temp", username: editing.assignee!.trim() }]);
+          let mapped = data
+            .map((r: any) => ({ id: r.id, username: r.username }))
+            .filter((u) => u.username && u.username.trim());
+          mapped = dedupeUsers(mapped);
+          if (editing?.assignee && editing.assignee.trim()) {
+            const assigneeKey = editing.assignee.trim().toLowerCase();
+            if (!mapped.find((u) => u.username.trim().toLowerCase() === assigneeKey)) {
+              mapped.push({
+                id: `__temp_editing_assignee__:${assigneeKey}`,
+                username: editing.assignee.trim(),
+              });
+            }
           }
+          setUserOptions(mapped);
           return;
         }
-      }
-      // fallback empty
-      setUserOptions((prev) => {
-        if (editing?.assignee && editing.assignee.trim()) {
-          return [{ id: "editing-temp", username: editing.assignee.trim() }];
+        // If query returned empty or errored, fallback preserves existing + potential editing assignee
+        setUserOptions((prev) => {
+          let base = dedupeUsers(prev);
+            if (editing?.assignee && editing.assignee.trim()) {
+              const assigneeKey = editing.assignee.trim().toLowerCase();
+              if (!base.find((u) => u.username.trim().toLowerCase() === assigneeKey)) {
+                base = [...base, { id: `__temp_editing_assignee__:${assigneeKey}`, username: editing.assignee.trim() }];
+              }
+            }
+            return base;
+        });
+      } catch (err) {
+        if (!cancelled) {
+          console.error("User fetch error", err);
         }
-        return prev;
-      });
+      }
     };
     fetchUsers();
+    return () => {
+      cancelled = true;
+    };
   }, [open, editing]);
 
   if (!open) return null;
@@ -112,10 +144,9 @@ export default function AddTaskModal({
     if (!taskData.title.trim()) return;
 
     if (taskData.dueDate) {
-      const today = new Date();
-      const selected = new Date(taskData.dueDate + "T00:00:00");
-      const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      if (selected < todayMid) {
+      // Compare ISO date strings to avoid timezone edge cases
+      const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
+      if (taskData.dueDate < todayStr) {
         setToastMsg("Due Date cannot be in the past.");
         setToastVisible(true);
         return;
@@ -146,7 +177,7 @@ export default function AddTaskModal({
                 position: "absolute",
                 top: 0,
                 left: "50%",
-                transform: "translateX(-50%)", /* center horizontally only */
+                transform: "translateX(-50%)",
                 background: "#ff4444",
                 color: "#fff",
                 padding: "0.4rem 0.75rem",
