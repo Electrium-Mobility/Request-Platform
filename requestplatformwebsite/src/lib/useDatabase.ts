@@ -130,10 +130,13 @@ export function useDatabase() {
       .from('TaskItem')
       .update(dbUpdate)
       .in('id', ids);
-    if (error) console.error('[batchUpdateTasks]', error);
+    if (error) {
+      console.error('[batchUpdateTasks]', error);
+      await fetchTasks();
+    }
   }, []);
 
-  //Create or update tasks
+  // Create or update tasks
   const upsertTask = useCallback(async (payload: UpsertPayload) => {
     // Optimistic update
     const tempId = payload.id ?? crypto.randomUUID();

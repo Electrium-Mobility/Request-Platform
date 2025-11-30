@@ -4,7 +4,7 @@
   height: 22px;
   border: 2px solid var(--accent);
   border-radius: 6px;
-  background: #151515;
+  background: var(--background);
   display: inline-block;
   position: relative;
   cursor: pointer;
