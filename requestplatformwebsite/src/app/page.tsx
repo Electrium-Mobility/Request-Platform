@@ -24,7 +24,7 @@ export default function Page() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TaskItem | null>(null);
 
-  const { tasks, upsertTask, toggleTask, deleteTask, archiveTask } = useDatabase();
+  const { tasks, upsertTask, toggleTask, deleteTask, archiveTask, batchUpdateTasks } = useDatabase();
 
   useEffect(() => {
     setMounted(true);
@@ -156,6 +156,8 @@ export default function Page() {
             onEdit={(t) => { setEditing(t); setOpen(true); }}
             onDelete={deleteTask}
             onArchive={handleArchive}
+            onBatchUpdate={batchUpdateTasks}
+            onUpdate={upsertTask}
           />
 
           <ArchivedSection

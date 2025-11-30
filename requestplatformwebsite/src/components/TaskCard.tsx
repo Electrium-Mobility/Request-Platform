@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import styles from '@/styles/TaskCard.module.css';
+import checkboxStyles from '@/styles/BatchSelectCheckbox.module.css';
 import { TaskItem } from '@/lib/types';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
@@ -48,12 +49,16 @@ export default function TaskCard({
   onEdit,
   onDelete,
   onArchive,
+  selected = false,
+  onSelect,
 }: {
   task: TaskItem;
   onToggle: (id: string) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
+  selected?: boolean;
+  onSelect?: (id: string, checked: boolean) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
 
@@ -77,12 +82,22 @@ export default function TaskCard({
           <h3 className={styles.title}>{task.title}</h3>
           <div className={styles.tags}>
             <span className={`${styles.tag} ${styles.subteam}`}>{task.subteam}</span>
-            <span className={`${styles.tag} ${styles[task.priority.toLowerCase() as 'low' | 'medium' | 'high']}`}>
-              {task.priority}
+            <span className={`${styles.tag} ${styles[(task.priority?.toLowerCase() ?? 'low') as 'low' | 'medium' | 'high']}`}>
+              {task.priority ?? 'Low'}
             </span>
           </div>
         </div>
         <div className={styles.actions}>
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={e => onSelect(task.id, e.target.checked)}
+              title="Select for batch operation"
+              aria-label={`Select ${task.title} for batch operation`}
+              className={checkboxStyles.checkbox}
+            />
+          )}
           {!task.archived && (
             <>
               <button
