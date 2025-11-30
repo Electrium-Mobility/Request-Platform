@@ -157,6 +157,7 @@ export default function Page() {
             onDelete={deleteTask}
             onArchive={handleArchive}
             onBatchUpdate={batchUpdateTasks}
+            onUpdate={upsertTask}
           />
 
           <ArchivedSection

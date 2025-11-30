@@ -6,6 +6,7 @@ import { TaskItem, Subteam, Priority } from "./types";
 
 type UpsertPayload = Omit<TaskItem, "id" | "createdAt" | "completed"> & {
   id?: string;
+  completed?: boolean;
 };
 
 function dbToTask(row: any): TaskItem {
@@ -23,7 +24,7 @@ function dbToTask(row: any): TaskItem {
     title: row.title,
     description: row.description ?? undefined,
     subteam: row.subteam as Subteam,
-    priority: row.priority as Priority,
+    priority: (row.priority || "Low") as Priority,
     assignee: assigneeName,
     assigneeId: row.assignee_id ?? undefined,
     dueDate: row.dueDate ?? undefined, // Matches quoted "dueDate" in DB
@@ -115,38 +116,52 @@ export function useDatabase() {
   }, [fetchTasks, fetchSingleTask]);
 
   // Batch update multiple tasks
-  const batchUpdateTasks = useCallback(async (ids: string[], update: { completed?: boolean; subteam?: Subteam; priority?: Priority }) => {
-    if (ids.length === 0) return;
-    
-    // Store previous state for rollback
-    const previousTasks = tasks.filter(t => ids.includes(t.id));
-    
-    // Optimistic update
-    setTasks(prev => prev.map(t =>
-      ids.includes(t.id)
-        ? { ...t, ...update }
-        : t
-    ));
-    
-    const dbUpdate: Partial<Pick<TaskItem, 'completed' | 'subteam' | 'priority'>> = {};
-    if (update.completed !== undefined) dbUpdate.completed = update.completed;
-    if (update.subteam !== undefined) dbUpdate.subteam = update.subteam;
-    if (update.priority !== undefined) dbUpdate.priority = update.priority;
-    
-    const { error } = await supabase
-      .from('TaskItem')
-      .update(dbUpdate)
-      .in('id', ids);
-      
-    if (error) {
-      console.error('[batchUpdateTasks]', error);
-      // Rollback on error
-      setTasks(prev => prev.map(t => {
-        const prevTask = previousTasks.find(pt => pt.id === t.id);
-        return prevTask || t;
-      }));
-    }
-  }, [tasks]);
+  const batchUpdateTasks = useCallback(
+    async (
+      ids: string[],
+      update: { completed?: boolean; subteam?: Subteam; priority?: Priority }
+    ) => {
+      if (ids.length === 0) return;
+
+      // Store previous state for rollback
+      // Use a function to get current tasks to avoid stale closure if we used 'tasks' dependency
+      // But since we are inside a hook, we need to be careful.
+      // We'll rely on 'setTasks' functional update for state, but for rollback we need the data.
+      // To simplify, we'll just use optimistic updates and refetch if error, or just accept 'tasks' as dependency.
+      // Given 'tasks' changes often, we might want to optimize, but for now adding 'tasks' to dependency array is correct.
+
+      const previousTasks = tasks.filter((t) => ids.includes(t.id));
+
+      // Optimistic update
+      setTasks((prev) =>
+        prev.map((t) => (ids.includes(t.id) ? { ...t, ...update } : t))
+      );
+
+      const dbUpdate: Partial<
+        Pick<TaskItem, "completed" | "subteam" | "priority">
+      > = {};
+      if (update.completed !== undefined) dbUpdate.completed = update.completed;
+      if (update.subteam !== undefined) dbUpdate.subteam = update.subteam;
+      if (update.priority !== undefined) dbUpdate.priority = update.priority;
+
+      const { error } = await supabase
+        .from("TaskItem")
+        .update(dbUpdate)
+        .in("id", ids);
+
+      if (error) {
+        console.error("[batchUpdateTasks]", error);
+        // Rollback on error
+        setTasks((prev) =>
+          prev.map((t) => {
+            const prevTask = previousTasks.find((pt) => pt.id === t.id);
+            return prevTask || t;
+          })
+        );
+      }
+    },
+    [tasks]
+  );
 
   // Create or update tasks
   const upsertTask = useCallback(async (payload: UpsertPayload) => {
@@ -160,7 +175,7 @@ export function useDatabase() {
       priority: payload.priority,
       assignee: payload.assignee ?? undefined, // Display name
       dueDate: payload.dueDate ?? undefined,
-      completed: false,
+      completed: payload.completed ?? false,
       createdAt: new Date().toISOString(),
     };
 
@@ -168,7 +183,12 @@ export function useDatabase() {
       setTasks((prev) =>
         prev.map((t) =>
           t.id === payload.id
-            ? { ...t, ...tempTask, createdAt: t.createdAt }
+            ? {
+                ...t,
+                ...tempTask,
+                completed: payload.completed ?? t.completed,
+                createdAt: t.createdAt,
+              }
             : t
         )
       );
@@ -205,7 +225,7 @@ export function useDatabase() {
       }
     }
 
-    const dbPayload = {
+    const dbPayload: any = {
       title: payload.title,
       description: payload.description ?? null,
       subteam: payload.subteam,
@@ -213,6 +233,9 @@ export function useDatabase() {
       dueDate: payload.dueDate ?? null,
       assignee_id: assigneeId,
     };
+    if (payload.completed !== undefined) {
+      dbPayload.completed = payload.completed;
+    }
 
     if (payload.id) {
       // UPDATE
@@ -231,7 +254,7 @@ export function useDatabase() {
         .from("TaskItem")
         .insert({
           ...dbPayload,
-          completed: false,
+          completed: payload.completed ?? false,
         })
         .select("*, user(username)")
         .single();
@@ -278,5 +301,13 @@ export function useDatabase() {
     if (error) console.error("[deleteTask]", error);
   }, []);
 
-  return { tasks, loading, upsertTask, toggleTask, deleteTask, archiveTask, batchUpdateTasks };
+  return {
+    tasks,
+    loading,
+    upsertTask,
+    toggleTask,
+    deleteTask,
+    archiveTask,
+    batchUpdateTasks,
+  };
 }

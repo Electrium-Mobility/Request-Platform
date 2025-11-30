@@ -82,8 +82,8 @@ export default function TaskCard({
           <h3 className={styles.title}>{task.title}</h3>
           <div className={styles.tags}>
             <span className={`${styles.tag} ${styles.subteam}`}>{task.subteam}</span>
-            <span className={`${styles.tag} ${styles[task.priority.toLowerCase() as 'low' | 'medium' | 'high']}`}>
-              {task.priority}
+            <span className={`${styles.tag} ${styles[(task.priority?.toLowerCase() ?? 'low') as 'low' | 'medium' | 'high']}`}>
+              {task.priority ?? 'Low'}
             </span>
           </div>
         </div>

@@ -1,9 +1,10 @@
-'use client';
-import React from 'react';
-import styles from '@/styles/TaskBoard.module.css';
-import { TaskItem, Subteam, Priority } from '@/lib/types';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import TaskCard from './TaskCard';
+"use client";
+import React from "react";
+import styles from "@/styles/TaskBoard.module.css";
+import { TaskItem, Subteam, Priority } from "@/lib/types";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import BatchOperationsBar from "./BatchOperationsBar";
+import TaskCard from "./TaskCard";
 
 export default function TaskBoard({
   tasks,
@@ -12,32 +13,45 @@ export default function TaskBoard({
   onDelete,
   onArchive,
   onBatchUpdate,
+  onUpdate,
 }: {
   tasks: TaskItem[];
   onToggle: (id: string) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
-  onBatchUpdate: (ids: string[], update: { completed?: boolean; subteam?: Subteam; priority?: Priority }) => Promise<void>;
+  onBatchUpdate: (
+    ids: string[],
+    update: { completed?: boolean; subteam?: Subteam; priority?: Priority }
+  ) => Promise<void>;
+  onUpdate: (task: TaskItem) => Promise<void>;
 }) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   React.useEffect(() => {
-    const validIds = tasks.map(t => t.id);
-    setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
+    const validIds = tasks.map((t) => t.id);
+    setSelectedIds((prev) => prev.filter((id) => validIds.includes(id)));
   }, [tasks]);
-  const uncompleted = tasks.filter(t => !t.completed);
-  const completed = tasks.filter(t => t.completed && !t.archived);
-  const unassigned = uncompleted.filter(t => !t.assignee);
-  const assigned = uncompleted.filter(t => t.assignee);
+  const uncompleted = tasks.filter((t) => !t.completed);
+  const completed = tasks.filter((t) => t.completed && !t.archived);
+  const unassigned = uncompleted.filter((t) => !t.assignee);
+  const assigned = uncompleted.filter((t) => t.assignee);
 
   // Disable drag-and-drop when tasks are selected
   function shouldDisableDrag(id: string) {
     return selectedIds.length > 0;
   }
-    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
+
+  function handleSelect(id: string, checked: boolean) {
+    setSelectedIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
   }
 
-  async function handleBatchUpdate(update: { completed?: boolean; subteam?: Subteam; priority?: Priority }) {
+  async function handleBatchUpdate(update: {
+    completed?: boolean;
+    subteam?: Subteam;
+    priority?: Priority;
+  }) {
     await onBatchUpdate(selectedIds, update);
     setSelectedIds([]);
   }
@@ -64,19 +78,19 @@ export default function TaskBoard({
       return;
     }
 
-    const task = tasks.find(t => t.id === draggableId);
+    const task = tasks.find((t) => t.id === draggableId);
     if (!task) return;
 
     // Column movement logic:
     switch (destination.droppableId) {
       case "unassigned":
         // Mark uncompleted + remove assignee
-        onEdit({ ...task, completed: false, assignee: "" });
+        onUpdate({ ...task, completed: false, assignee: "" });
         break;
 
       case "assigned":
         // Move to assigned (user can edit assignment later)
-        onEdit({ ...task, completed: false });
+        onUpdate({ ...task, completed: false });
         break;
 
       case "completed":
@@ -88,8 +102,7 @@ export default function TaskBoard({
     }
   };
 
-  // Batch operations bar component
-  const BatchOperationsBar = require('./BatchOperationsBar').default;
+  // Batch operations bar component (removed require)
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -104,14 +117,18 @@ export default function TaskBoard({
         <div className={styles.grid}>
           {/* Uncompleted Unassigned */}
           <Droppable droppableId="unassigned">
-            {(provided) => (
-              <div className={styles.column} ref={provided.innerRef} {...provided.droppableProps}>
+            {(provided: any) => (
+              <div
+                className={styles.column}
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+              >
                 <h3>Uncompleted — Unassigned</h3>
                 <div className={styles.colBody}>
                   {unassigned.length === 0 && (
                     <div className={styles.empty}>No unassigned tasks.</div>
                   )}
-                  {unassigned.map((t, i) => (
+                  {unassigned.map((t, i) =>
                     shouldDisableDrag(t.id) ? (
                       <div key={t.id}>
                         <TaskCard
@@ -127,7 +144,11 @@ export default function TaskBoard({
                     ) : (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
                         {(provided) => (
-                          <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
                             <TaskCard
                               task={t}
                               onToggle={onToggle}
@@ -141,7 +162,7 @@ export default function TaskBoard({
                         )}
                       </Draggable>
                     )
-                  ))}
+                  )}
                   {provided.placeholder}
                 </div>
               </div>
@@ -150,14 +171,18 @@ export default function TaskBoard({
 
           {/* Uncompleted Assigned */}
           <Droppable droppableId="assigned">
-            {(provided) => (
-              <div className={styles.column} ref={provided.innerRef} {...provided.droppableProps}>
+            {(provided: any) => (
+              <div
+                className={styles.column}
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+              >
                 <h3>Uncompleted — Assigned</h3>
                 <div className={styles.colBody}>
                   {assigned.length === 0 && (
                     <div className={styles.empty}>No assigned tasks.</div>
                   )}
-                  {assigned.map((t, i) => (
+                  {assigned.map((t, i) =>
                     shouldDisableDrag(t.id) ? (
                       <div key={t.id}>
                         <TaskCard
@@ -173,7 +198,11 @@ export default function TaskBoard({
                     ) : (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
                         {(provided) => (
-                          <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
                             <TaskCard
                               task={t}
                               onToggle={onToggle}
@@ -187,7 +216,7 @@ export default function TaskBoard({
                         )}
                       </Draggable>
                     )
-                  ))}
+                  )}
                   {provided.placeholder}
                 </div>
               </div>
@@ -196,14 +225,18 @@ export default function TaskBoard({
 
           {/* Completed */}
           <Droppable droppableId="completed">
-            {(provided) => (
-              <div className={styles.column} ref={provided.innerRef} {...provided.droppableProps}>
+            {(provided: any) => (
+              <div
+                className={styles.column}
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+              >
                 <h3>Completed Tasks</h3>
                 <div className={styles.colBody}>
                   {completed.length === 0 && (
                     <div className={styles.empty}>Nothing completed yet.</div>
                   )}
-                  {completed.map((t, i) => (
+                  {completed.map((t, i) =>
                     shouldDisableDrag(t.id) ? (
                       <div key={t.id}>
                         <TaskCard
@@ -219,7 +252,11 @@ export default function TaskBoard({
                     ) : (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
                         {(provided) => (
-                          <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
                             <TaskCard
                               task={t}
                               onToggle={onToggle}
@@ -233,7 +270,7 @@ export default function TaskBoard({
                         )}
                       </Draggable>
                     )
-                  ))}
+                  )}
                   {provided.placeholder}
                 </div>
               </div>
