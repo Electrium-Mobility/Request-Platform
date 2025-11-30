@@ -52,7 +52,13 @@ export default function BatchOperationsBar({ selectedCount, onBatchUpdate, onCle
         <option value="Medium">Medium</option>
         <option value="High">High</option>
       </select>
-      <button className={styles.btn} onClick={handleApply} disabled={selectedCount === 0}>Apply</button>
+      <button
+        className={styles.btn}
+        onClick={handleApply}
+        disabled={selectedCount === 0 || (completed === '' && subteam === '' && priority === '')}
+      >
+        Apply
+      </button>
       <button className={`${styles.btn} ${styles.ghost}`} onClick={onClearSelection}>Clear</button>
     </div>
   );
