@@ -44,7 +44,6 @@ function IconUnarchive() {
 }
 
 export default function TaskCard({
-
   task,
   onToggle,
   onEdit,
