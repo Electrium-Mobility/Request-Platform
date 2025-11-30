@@ -21,6 +21,10 @@ export default function TaskBoard({
   onBatchUpdate: (ids: string[], update: { completed?: boolean; subteam?: Subteam; priority?: Priority }) => Promise<void>;
 }) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    const validIds = tasks.map(t => t.id);
+    setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
+  }, [tasks]);
   const uncompleted = tasks.filter(t => !t.completed);
   const completed = tasks.filter(t => t.completed && !t.archived);
   const unassigned = uncompleted.filter(t => !t.assignee);
