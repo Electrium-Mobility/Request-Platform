@@ -46,7 +46,7 @@ export default function BatchOperationsBar({ selectedCount, onBatchUpdate, onCle
         <option value="Mechanical">Mechanical</option>
         <option value="Web Dev">Web Dev</option>
       </select>
-      <select className={styles.select} value={priority} onChange={e => setPriority(e.target.value as Priority)}>
+      <select className={styles.select} value={priority} onChange={e => setPriority(e.target.value as Priority | '')}>
         <option value="">Change Priority</option>
         <option value="Low">Low</option>
         <option value="Medium">Medium</option>
