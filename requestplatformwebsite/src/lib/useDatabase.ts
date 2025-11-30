@@ -114,6 +114,28 @@ export function useDatabase() {
     };
   }, [fetchTasks, fetchSingleTask]);
 
+  // Batch update multiple tasks
+  const batchUpdateTasks = useCallback(async (ids: string[], update: { completed?: boolean; subteam?: Subteam; priority?: Priority }) => {
+    if (ids.length === 0) return;
+    setTasks(prev => prev.map(t =>
+      ids.includes(t.id)
+        ? { ...t, ...update }
+        : t
+    ));
+    const dbUpdate: Partial<Pick<TaskItem, 'completed' | 'subteam' | 'priority'>> = {};
+    if (update.completed !== undefined) dbUpdate.completed = update.completed;
+    if (update.subteam !== undefined) dbUpdate.subteam = update.subteam;
+    if (update.priority !== undefined) dbUpdate.priority = update.priority;
+    const { error } = await supabase
+      .from('TaskItem')
+      .update(dbUpdate)
+      .in('id', ids);
+    if (error) {
+      console.error('[batchUpdateTasks]', error);
+      await fetchTasks();
+    }
+  }, []);
+
   // Create or update tasks
   const upsertTask = useCallback(async (payload: UpsertPayload) => {
     // Optimistic update
@@ -244,5 +266,5 @@ export function useDatabase() {
     if (error) console.error("[deleteTask]", error);
   }, []);
 
-  return { tasks, loading, upsertTask, toggleTask, deleteTask, archiveTask };
+  return { tasks, loading, upsertTask, toggleTask, deleteTask, archiveTask, batchUpdateTasks };
 }
