@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { TaskItem, Priority, Subteam } from "@/lib/types";
 
+const TOAST_DURATION_MS = 3000;
+
 /*Double check all subteams are here later*/
 const subteams: Subteam[] = [
   "Electrical",
@@ -41,7 +43,9 @@ export default function AddTaskModal({
     assignee: "",
   });
 
-  const [userOptions, setUserOptions] = useState<{ id: string; username: string }[]>([]);
+  const [userOptions, setUserOptions] = useState<
+    { id: string; username: string }[]
+  >([]);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -60,7 +64,7 @@ export default function AddTaskModal({
 
   useEffect(() => {
     if (toastVisible) {
-      const t = setTimeout(() => setToastVisible(false), 3000);
+      const t = setTimeout(() => setToastVisible(false), TOAST_DURATION_MS);
       return () => clearTimeout(t);
     }
   }, [toastVisible]);
@@ -104,7 +108,11 @@ export default function AddTaskModal({
           mapped = dedupeUsers(mapped);
           if (editing?.assignee && editing.assignee.trim()) {
             const assigneeKey = editing.assignee.trim().toLowerCase();
-            if (!mapped.find((u) => u.username.trim().toLowerCase() === assigneeKey)) {
+            if (
+              !mapped.find(
+                (u) => u.username.trim().toLowerCase() === assigneeKey
+              )
+            ) {
               mapped.push({
                 id: `__temp_editing_assignee__:${assigneeKey}`,
                 username: editing.assignee.trim(),
@@ -117,13 +125,21 @@ export default function AddTaskModal({
         // If query returned empty or errored, fallback preserves existing + potential editing assignee
         setUserOptions((prev) => {
           let base = dedupeUsers(prev);
-            if (editing?.assignee && editing.assignee.trim()) {
-              const assigneeKey = editing.assignee.trim().toLowerCase();
-              if (!base.find((u) => u.username.trim().toLowerCase() === assigneeKey)) {
-                base = [...base, { id: `__temp_editing_assignee__:${assigneeKey}`, username: editing.assignee.trim() }];
-              }
+          if (editing?.assignee && editing.assignee.trim()) {
+            const assigneeKey = editing.assignee.trim().toLowerCase();
+            if (
+              !base.find((u) => u.username.trim().toLowerCase() === assigneeKey)
+            ) {
+              base = [
+                ...base,
+                {
+                  id: `__temp_editing_assignee__:${assigneeKey}`,
+                  username: editing.assignee.trim(),
+                },
+              ];
             }
-            return base;
+          }
+          return base;
         });
       } catch (err) {
         if (!cancelled) {
@@ -169,28 +185,16 @@ export default function AddTaskModal({
         onClick={(e) => e.stopPropagation()}
         style={{ animation: "slideDown 0.25s ease both" }}
       >
-        <div style={{ position: "relative", marginBottom: "0.75rem", minHeight: "1.75rem" }}>
+        <div
+          style={{
+            position: "relative",
+            marginBottom: "0.75rem",
+            minHeight: "1.75rem",
+          }}
+        >
           <h2 style={{ margin: 0 }}>{editing ? "Edit Task" : "Add Task"}</h2>
           {toastVisible && toastMsg && (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: "50%",
-                transform: "translateX(-50%)",
-                background: "#ff4444",
-                color: "#fff",
-                padding: "0.4rem 0.75rem",
-                borderRadius: "4px",
-                fontSize: "0.75rem",
-                lineHeight: 1.1,
-                whiteSpace: "nowrap",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                animation: "fadeIn 0.15s ease",
-              }}
-            >
-              {toastMsg}
-            </div>
+            <div className={styles.toast}>{toastMsg}</div>
           )}
         </div>
         <form className={styles.form} onSubmit={handleSubmit}>
