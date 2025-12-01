@@ -210,17 +210,43 @@ export function useDatabase() {
       if (existingUser) {
         assigneeId = existingUser.id;
       } else {
-        // 2. Create user if not exists
-        const { data: newUser, error: createError } = await supabase
+        // 2. Try to select again to ensure no race condition
+        // If still not found, insert
+        // Ideally we should rely on DB constraint, but here we double check
+        const { data: retryUser } = await supabase
           .from("user")
-          .insert({ username: name })
           .select("id")
+          .eq("username", name)
           .single();
-
-        if (!createError && newUser) {
-          assigneeId = newUser.id;
+          
+        if (retryUser) {
+           assigneeId = retryUser.id;
         } else {
-          console.error("[upsertTask] Failed to create user:", createError);
+          // 3. Create user if not exists
+          const { data: newUser, error: createError } = await supabase
+            .from("user")
+            .insert({ username: name })
+            .select("id")
+            .single();
+
+          if (!createError && newUser) {
+            assigneeId = newUser.id;
+          } else {
+             // If insert failed, it might be because another client inserted it just now
+             // (assuming unique constraint exists or will be added)
+             // Try fetching one last time
+             const { data: finalUser } = await supabase
+              .from("user")
+              .select("id")
+              .eq("username", name)
+              .single();
+              
+             if (finalUser) {
+               assigneeId = finalUser.id;
+             } else {
+               console.error("[upsertTask] Failed to create or find user:", createError);
+             }
+          }
         }
       }
     }

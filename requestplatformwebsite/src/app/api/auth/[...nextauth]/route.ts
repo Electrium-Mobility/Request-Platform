@@ -9,7 +9,7 @@ const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
 
   session: {
-    strategy: "jwt", 
+    strategy: "jwt",
   },
 
   providers: [
@@ -29,9 +29,12 @@ const handler = NextAuth({
       if (!account?.access_token) return false;
 
       try {
-        const guildsResponse = await fetch("https://discord.com/api/users/@me/guilds", {
-          headers: { Authorization: `Bearer ${account.access_token}` },
-        });
+        const guildsResponse = await fetch(
+          "https://discord.com/api/users/@me/guilds",
+          {
+            headers: { Authorization: `Bearer ${account.access_token}` },
+          }
+        );
 
         if (!guildsResponse.ok) {
           console.error("Failed to fetch guilds:", guildsResponse.statusText);
@@ -46,26 +49,32 @@ const handler = NextAuth({
         if (inGuild) {
           // Sync user to Supabase
           if (user?.name) {
-            const { error } = await supabase
-              .from('user')
-              .select('id')
-              .eq('username', user.name)
-              .single()
-              .then(async ({ data }) => {
-                if (!data) {
-                  // User doesn't exist, create new one
-                  return await supabase.from('user').insert({ username: user.name });
-                }
-                // User exists, do nothing (or update if we had more fields)
-                return { error: null };
-              });
+            // Try to find first
+            const { data: existing } = await supabase
+              .from("user")
+              .select("id")
+              .eq("username", user.name)
+              .single();
 
-            if (error) {
-              console.error("Failed to sync user to Supabase:", error);
-              // We don't block sign-in if sync fails, but logging it is good
+            if (!existing) {
+              // If not found, try insert
+              const { error: insertError } = await supabase
+                .from("user")
+                .insert({ username: user.name });
+
+              if (insertError) {
+                // If insert failed (e.g. unique constraint), ignore or log
+                if (insertError.code !== "23505") {
+                  // 23505 is unique violation
+                  console.error(
+                    "Failed to create user in Supabase:",
+                    insertError
+                  );
+                }
+              }
             }
           }
-          
+
           return true; // Allow sign-in
         } else {
           throw new Error("UNAUTHORIZED_GUILD");
@@ -83,22 +92,22 @@ const handler = NextAuth({
 
         // Ensure user is synced to Supabase even if they are already logged in
         if (session.user.name) {
-          // We perform a "lazy" sync here. 
-          // Ideally, we could optimize this to not run on every session check,
-          // but for now, we'll rely on the fact that checking existence is cheap.
           try {
-             const { data } = await supabase
-              .from('user')
-              .select('id')
-              .eq('username', session.user.name)
+            const { data } = await supabase
+              .from("user")
+              .select("id")
+              .eq("username", session.user.name)
               .single();
-            
-             if (!data) {
-                await supabase.from('user').insert({ username: session.user.name });
-             }
+
+            if (!data) {
+              // Best effort insert
+              await supabase
+                .from("user")
+                .insert({ username: session.user.name });
+            }
           } catch (err) {
-             // Ignore errors here to not disrupt the session flow
-             console.error("Session sync error:", err);
+            // Ignore errors here to not disrupt the session flow
+            console.error("Session sync error:", err);
           }
         }
       }
