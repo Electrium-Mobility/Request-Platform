@@ -165,7 +165,7 @@ export default function Page() {
               }
               const next = t ? !t.completed : true; // default to true if not found
               toggleTask(id, next)
-                .then(() => toast.success(next ? 'Marked complete' : 'Marked uncompleted'))
+                .then(() => toast.success(next ? 'Marked complete' : 'Marked incomplete'))
                 .catch((err) => {
                   console.error('[toggleTask]', err);
                   toast.error('Failed to toggle');
