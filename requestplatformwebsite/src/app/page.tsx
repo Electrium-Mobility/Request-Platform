@@ -13,6 +13,7 @@ import AddTaskModal from '@/components/AddTaskModal';
 import ArchivedSection from '@/components/ArchivedSection';
 import { TaskItem, Subteam } from '@/lib/types';
 import { useDatabase } from '@/lib/useDatabase';
+import toast from 'react-hot-toast';
 
 export default function Page() {
   const { data: session, status } = useSession();
@@ -62,13 +63,25 @@ export default function Page() {
   const handleUpsert = async (
     payload: Omit<TaskItem, 'id' | 'createdAt' | 'completed'> & { id?: string }
   ) => {
-    await upsertTask(payload);
-    setOpen(false);
-    setEditing(null);
+    try {
+      await upsertTask(payload);
+      toast.success(payload.id ? 'Task updated' : 'Task created');
+      setOpen(false);
+      setEditing(null);
+    } catch (err) {
+      console.error('[handleUpsert]', err);
+      toast.error('Failed to save task');
+    }
   };
 
   const handleArchive = async (id: string, archived: boolean) => {
-    await archiveTask(id, archived);
+    try {
+      await archiveTask(id, archived);
+      toast.success(archived ? 'Task archived' : 'Task unarchived');
+    } catch (err) {
+      console.error('[handleArchive]', err);
+      toast.error('Failed to change archive state');
+    }
   };
 
   // Wait for hydration
@@ -151,10 +164,22 @@ export default function Page() {
                 console.error(`Task with id "${id}" not found when toggling completion.`);
               }
               const next = t ? !t.completed : true; // default to true if not found
-              toggleTask(id, next).catch(console.error);
+              toggleTask(id, next)
+                .then(() => toast.success(next ? 'Marked complete' : 'Marked incomplete'))
+                .catch((err) => {
+                  console.error('[toggleTask]', err);
+                  toast.error('Failed to toggle task completion');
+                });
             }}
             onEdit={(t) => { setEditing(t); setOpen(true); }}
-            onDelete={deleteTask}
+            onDelete={(id) => {
+              deleteTask(id)
+                .then(() => toast.success('Task deleted'))
+                .catch((err) => {
+                  console.error('[deleteTask]', err);
+                  toast.error('Failed to delete task');
+                });
+            }}
             onArchive={handleArchive}
             onBatchUpdate={batchUpdateTasks}
             onUpdate={upsertTask}
