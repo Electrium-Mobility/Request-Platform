@@ -168,7 +168,7 @@ export default function Page() {
                 .then(() => toast.success(next ? 'Marked complete' : 'Marked incomplete'))
                 .catch((err) => {
                   console.error('[toggleTask]', err);
-                  toast.error('Failed to toggle');
+                  toast.error('Failed to toggle task completion');
                 });
             }}
             onEdit={(t) => { setEditing(t); setOpen(true); }}
