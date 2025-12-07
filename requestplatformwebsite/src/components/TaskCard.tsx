@@ -60,16 +60,7 @@ export default function TaskCard({
   selected?: boolean;
   onSelect?: (id: string, checked: boolean) => void;
 }) {
-  const [hoveredButtonIndex, setHoveredButtonIndex] = useState(-1);
   const [confirming, setConfirming] = useState(false);
-
-  function enableHover(index: number) {
-    setHoveredButtonIndex(index);
-  }
-
-  function disableHover() {
-    setHoveredButtonIndex(-1);
-  }
 
   if (confirming) {
     return (
@@ -89,9 +80,23 @@ export default function TaskCard({
       className={`panel ${styles.card}`}
       style={{ animation: "fadeInUp 0.35s ease both" }}
     >
-      <div className={styles.row}>
-        <div className={styles.titleBox}>
-          <h3 className={styles.title}>{task.title}</h3>
+      {/* Top Section */}
+      <div className={styles.topSection}>
+        {/* Left Content: Checkbox, Title, Tags */}
+        <div className={styles.leftContent}>
+          <div className={styles.titleRow}>
+            {onSelect && (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => onSelect(task.id, e.target.checked)}
+                title="Select for batch operation"
+                aria-label={`Select ${task.title} for batch operation`}
+                className={checkboxStyles.checkbox}
+              />
+            )}
+            <h3 className={styles.title}>{task.title}</h3>
+          </div>
           <div className={styles.tags}>
             <span className={`${styles.tag} ${styles.subteam}`}>
               {task.subteam}
@@ -110,89 +115,82 @@ export default function TaskCard({
             </span>
           </div>
         </div>
-        <div className={styles.actions}>
-          {onSelect && (
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={(e) => onSelect(task.id, e.target.checked)}
-              title="Select for batch operation"
-              aria-label={`Select ${task.title} for batch operation`}
-              className={checkboxStyles.checkbox}
-            />
+
+        {/* Right Content: Meta Info */}
+        <div className={styles.rightContent}>
+          {task.assignee && (
+            <span>
+              Assignee: <strong>{task.assignee}</strong>
+            </span>
           )}
-          {!task.archived && (
-            <>
-              <button
-                className="btn ghost"
-                title={task.completed ? 'Mark uncompleted' : 'Mark completed'}
-                onClick={() => onToggle(task.id)}
-                onMouseOver={() => enableHover(0)}
-                onMouseLeave={() => disableHover()}
-              >
-                <IconCheck /> {task.completed ? 'Uncomplete' : 'Complete'}
-              </button>
-              {task.completed && (
-                <button
-                  className="btn ghost"
-                  title="Archive Task"
-                  aria-label="Archive Task"
-                  onClick={() => onArchive(task.id, true)}
-                  onMouseOver={() => enableHover(1)}
-                  onMouseLeave={() => disableHover()}
-                >
-                <IconArchive /> Archive
-                </button>
-              )}
-            </>
+          {task.dueDate && (
+            <span>
+              Due: <strong>{new Date(task.dueDate).toLocaleDateString()}</strong>
+            </span>
           )}
-          {task.archived && (
-            <button
-              className="btn ghost"
-              title="Unarchive Task"
-              aria-label="Unarchive Task"
-              onClick={() => onArchive(task.id, false)}
-              onMouseOver={() => enableHover(2)}
-              onMouseLeave={() => disableHover()}
-            >
-            <IconUnarchive /> Unarchive
-            </button>
-          )}
-          <button
-            className="btn ghost"
-            title="Edit"
-            aria-label="Edit Task"
-            onClick={() => onEdit(task)}
-            onMouseOver={() => enableHover(3)}
-            onMouseLeave={() => disableHover()}
-          >
-            <IconEdit /> {hoveredButtonIndex === 3 ? "Edit" : null}
-          </button>
-          <button
-            className="btn ghost"
-            title="Delete"
-            aria-label="Delete Task"
-            onClick={() => setConfirming(true)}
-            onMouseOver={() => enableHover(4)}
-            onMouseLeave={() => disableHover()}
-          >
-            <IconTrash /> {hoveredButtonIndex === 4 ? "Delete" : null}
-          </button>
+          <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
         </div>
       </div>
+
+      {/* Middle: Description */}
       {task.description && <p className={styles.desc}>{task.description}</p>}
-      <div className={styles.meta}>
-        {task.assignee && (
-          <span>
-            Assignee: <strong>{task.assignee}</strong>
-          </span>
+
+      {/* Bottom: Action Buttons */}
+      <div className={styles.actionButtons}>
+        {!task.archived && (
+          <>
+            <button
+              className="btn ghost"
+              title={task.completed ? "Mark uncompleted" : "Mark completed"}
+              onClick={() => onToggle(task.id)}
+            >
+              <IconCheck />
+              <span className={styles.btnText}>
+                {task.completed ? "Uncomplete" : "Complete"}
+              </span>
+            </button>
+            {task.completed && (
+              <button
+                className="btn ghost"
+                title="Archive Task"
+                aria-label="Archive Task"
+                onClick={() => onArchive(task.id, true)}
+              >
+                <IconArchive />
+                <span className={styles.btnText}>Archive</span>
+              </button>
+            )}
+          </>
         )}
-        {task.dueDate && (
-          <span>
-            Due: <strong>{new Date(task.dueDate).toLocaleDateString()}</strong>
-          </span>
+        {task.archived && (
+          <button
+            className="btn ghost"
+            title="Unarchive Task"
+            aria-label="Unarchive Task"
+            onClick={() => onArchive(task.id, false)}
+          >
+            <IconUnarchive />
+            <span className={styles.btnText}>Unarchive</span>
+          </button>
         )}
-        <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
+        <button
+          className="btn ghost"
+          title="Edit"
+          aria-label="Edit Task"
+          onClick={() => onEdit(task)}
+        >
+          <IconEdit />
+          <span className={styles.btnText}>Edit</span>
+        </button>
+        <button
+          className="btn ghost"
+          title="Delete"
+          aria-label="Delete Task"
+          onClick={() => setConfirming(true)}
+        >
+          <IconTrash />
+          <span className={styles.btnText}>Delete</span>
+        </button>
       </div>
     </div>
   );
