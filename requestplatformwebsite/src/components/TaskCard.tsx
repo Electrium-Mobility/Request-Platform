@@ -60,7 +60,16 @@ export default function TaskCard({
   selected?: boolean;
   onSelect?: (id: string, checked: boolean) => void;
 }) {
+  const [hoveredButtonIndex, setHoveredButtonIndex] = useState(-1);
   const [confirming, setConfirming] = useState(false);
+
+  function enableHover(index: number) {
+    setHoveredButtonIndex(index);
+  }
+
+  function disableHover() {
+    setHoveredButtonIndex(-1);
+  }
 
   if (confirming) {
     return (
@@ -116,18 +125,23 @@ export default function TaskCard({
             <>
               <button
                 className="btn ghost"
-                title={task.completed ? "Mark uncompleted" : "Mark completed"}
+                title={task.completed ? 'Mark uncompleted' : 'Mark completed'}
                 onClick={() => onToggle(task.id)}
+                onMouseOver={() => enableHover(0)}
+                onMouseLeave={() => disableHover()}
               >
-                <IconCheck /> {task.completed ? "Uncomplete" : "Complete"}
+                <IconCheck /> {task.completed ? 'Uncomplete' : 'Complete'}
               </button>
               {task.completed && (
                 <button
                   className="btn ghost"
                   title="Archive Task"
+                  aria-label="Archive Task"
                   onClick={() => onArchive(task.id, true)}
+                  onMouseOver={() => enableHover(1)}
+                  onMouseLeave={() => disableHover()}
                 >
-                  <IconArchive /> Archive
+                <IconArchive /> Archive
                 </button>
               )}
             </>
@@ -136,24 +150,33 @@ export default function TaskCard({
             <button
               className="btn ghost"
               title="Unarchive Task"
+              aria-label="Unarchive Task"
               onClick={() => onArchive(task.id, false)}
+              onMouseOver={() => enableHover(2)}
+              onMouseLeave={() => disableHover()}
             >
-              <IconUnarchive /> Unarchive
+            <IconUnarchive /> Unarchive
             </button>
           )}
           <button
             className="btn ghost"
             title="Edit"
+            aria-label="Edit Task"
             onClick={() => onEdit(task)}
+            onMouseOver={() => enableHover(3)}
+            onMouseLeave={() => disableHover()}
           >
-            <IconEdit /> Edit
+            <IconEdit /> {hoveredButtonIndex === 3 ? "Edit" : null}
           </button>
           <button
             className="btn ghost"
             title="Delete"
+            aria-label="Delete Task"
             onClick={() => setConfirming(true)}
+            onMouseOver={() => enableHover(4)}
+            onMouseLeave={() => disableHover()}
           >
-            <IconTrash /> Delete
+            <IconTrash /> {hoveredButtonIndex === 4 ? "Delete" : null}
           </button>
         </div>
       </div>
