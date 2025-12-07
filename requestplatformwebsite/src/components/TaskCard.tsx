@@ -125,7 +125,8 @@ export default function TaskCard({
           )}
           {task.dueDate && (
             <span>
-              Due: <strong>{new Date(task.dueDate).toLocaleDateString()}</strong>
+              Due:{" "}
+              <strong>{new Date(task.dueDate).toLocaleDateString()}</strong>
             </span>
           )}
           <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
