@@ -1,10 +1,7 @@
 "use client";
 import styles from "@/styles/Modal.module.css";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import { TaskItem, Priority, Subteam } from "@/lib/types";
-
-const TOAST_DURATION_MS = 3000;
 
 /*Double check all subteams are here later*/
 const subteams: Subteam[] = [
@@ -43,32 +40,6 @@ export default function AddTaskModal({
     assignee: "",
   });
 
-  const [userOptions, setUserOptions] = useState<
-    { id: string; username: string }[]
-  >([]);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const [toastVisible, setToastVisible] = useState(false);
-
-  // Ensure dropdown does not show duplicate usernames (case/whitespace-insensitive)
-  const dedupeUsers = (items: { id: string; username: string }[]) => {
-    const seen = new Set<string>();
-    const result: { id: string; username: string }[] = [];
-    for (const u of items) {
-      const key = (u.username || "").trim().toLowerCase();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      result.push({ id: u.id, username: u.username.trim() });
-    }
-    return result;
-  };
-
-  useEffect(() => {
-    if (toastVisible) {
-      const t = setTimeout(() => setToastVisible(false), TOAST_DURATION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [toastVisible]);
-
   useEffect(() => {
     if (open && editing) {
       setTaskData({
@@ -91,66 +62,6 @@ export default function AddTaskModal({
         assignee: "",
       });
     }
-
-    let cancelled = false;
-    const fetchUsers = async () => {
-      if (!open) return;
-      try {
-        const { data, error } = await supabase
-          .from("user")
-          .select("id, username")
-          .limit(100);
-        if (cancelled) return;
-        if (!error && data && data.length) {
-          let mapped = data
-            .map((r: any) => ({ id: r.id, username: r.username }))
-            .filter((u) => u.username && u.username.trim());
-          mapped = dedupeUsers(mapped);
-          if (editing?.assignee && editing.assignee.trim()) {
-            const assigneeKey = editing.assignee.trim().toLowerCase();
-            if (
-              !mapped.find(
-                (u) => u.username.trim().toLowerCase() === assigneeKey
-              )
-            ) {
-              mapped.push({
-                id: `__temp_editing_assignee__:${assigneeKey}`,
-                username: editing.assignee.trim(),
-              });
-            }
-          }
-          setUserOptions(mapped);
-          return;
-        }
-        // If query returned empty or errored, fallback preserves existing + potential editing assignee
-        setUserOptions((prev) => {
-          let base = dedupeUsers(prev);
-          if (editing?.assignee && editing.assignee.trim()) {
-            const assigneeKey = editing.assignee.trim().toLowerCase();
-            if (
-              !base.find((u) => u.username.trim().toLowerCase() === assigneeKey)
-            ) {
-              base = [
-                ...base,
-                {
-                  id: `__temp_editing_assignee__:${assigneeKey}`,
-                  username: editing.assignee.trim(),
-                },
-              ];
-            }
-          }
-          return base;
-        });
-      } catch (err) {
-        if (!cancelled) {
-          console.error("User fetch error", err);
-        }
-      }
-    };
-    fetchUsers();
-    return () => {
-      cancelled = true;
-    };
   }, [open, editing]);
 
   if (!open) return null;
@@ -158,16 +69,6 @@ export default function AddTaskModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskData.title.trim()) return;
-
-    if (taskData.dueDate) {
-      // Compare ISO date strings to avoid timezone edge cases
-      const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
-      if (taskData.dueDate < todayStr) {
-        setToastMsg("Due Date cannot be in the past.");
-        setToastVisible(true);
-        return;
-      }
-    }
 
     onSubmit({
       ...taskData,
@@ -185,18 +86,7 @@ export default function AddTaskModal({
         onClick={(e) => e.stopPropagation()}
         style={{ animation: "slideDown 0.25s ease both" }}
       >
-        <div
-          style={{
-            position: "relative",
-            marginBottom: "0.75rem",
-            minHeight: "1.75rem",
-          }}
-        >
-          <h2 style={{ margin: 0 }}>{editing ? "Edit Task" : "Add Task"}</h2>
-          {toastVisible && toastMsg && (
-            <div className={styles.toast}>{toastMsg}</div>
-          )}
-        </div>
+        <h2>{editing ? "Edit Task" : "Add Task"}</h2>
         <form className={styles.form} onSubmit={handleSubmit}>
           <label>
             <span>Task Title</span>
@@ -272,19 +162,13 @@ export default function AddTaskModal({
             </label>
             <label>
               <span>Assign To</span>
-              <select
+              <input
                 value={taskData.assignee}
                 onChange={(e) =>
                   setTaskData({ ...taskData, assignee: e.target.value })
                 }
-              >
-                <option value="">Unassigned</option>
-                {userOptions.map((u) => (
-                  <option key={u.id} value={u.username}>
-                    {u.username}
-                  </option>
-                ))}
-              </select>
+                placeholder="Optional"
+              />
             </label>
           </div>
           <div className={styles.actions}>

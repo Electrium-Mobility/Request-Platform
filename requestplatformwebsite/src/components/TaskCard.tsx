@@ -125,18 +125,12 @@ export default function TaskCard({
             <>
               <button
                 className="btn ghost"
-                title={task.completed ? "Mark uncompleted" : "Mark completed"}
-                aria-label={task.completed ? "Mark uncompleted" : "Mark completed"}
+                title={task.completed ? 'Mark uncompleted' : 'Mark completed'}
                 onClick={() => onToggle(task.id)}
                 onMouseOver={() => enableHover(0)}
                 onMouseLeave={() => disableHover()}
               >
-                <IconCheck />{" "}
-                {hoveredButtonIndex === 0
-                  ? task.completed
-                    ? "Uncomplete"
-                    : "Complete"
-                  : null}
+                <IconCheck /> {task.completed ? 'Uncomplete' : 'Complete'}
               </button>
               {task.completed && (
                 <button
@@ -147,7 +141,7 @@ export default function TaskCard({
                   onMouseOver={() => enableHover(1)}
                   onMouseLeave={() => disableHover()}
                 >
-                  <IconArchive /> {hoveredButtonIndex === 1 ? "Archive" : null}
+                <IconArchive /> Archive
                 </button>
               )}
             </>
@@ -161,7 +155,7 @@ export default function TaskCard({
               onMouseOver={() => enableHover(2)}
               onMouseLeave={() => disableHover()}
             >
-              <IconUnarchive /> {hoveredButtonIndex === 2 ? "Unarchive" : null}
+            <IconUnarchive /> Unarchive
             </button>
           )}
           <button

@@ -158,6 +158,7 @@ export function useDatabase() {
             return prevTask || t;
           })
         );
+        throw error;
       }
     },
     [tasks]
@@ -218,9 +219,9 @@ export function useDatabase() {
           .select("id")
           .eq("username", name)
           .single();
-          
+
         if (retryUser) {
-           assigneeId = retryUser.id;
+          assigneeId = retryUser.id;
         } else {
           // 3. Create user if not exists
           const { data: newUser, error: createError } = await supabase
@@ -232,20 +233,23 @@ export function useDatabase() {
           if (!createError && newUser) {
             assigneeId = newUser.id;
           } else {
-             // If insert failed, it might be because another client inserted it just now
-             // (assuming unique constraint exists or will be added)
-             // Try fetching one last time
-             const { data: finalUser } = await supabase
+            // If insert failed, it might be because another client inserted it just now
+            // (assuming unique constraint exists or will be added)
+            // Try fetching one last time
+            const { data: finalUser } = await supabase
               .from("user")
               .select("id")
               .eq("username", name)
               .single();
-              
-             if (finalUser) {
-               assigneeId = finalUser.id;
-             } else {
-               console.error("[upsertTask] Failed to create or find user:", createError);
-             }
+
+            if (finalUser) {
+              assigneeId = finalUser.id;
+            } else {
+              console.error(
+                "[upsertTask] Failed to create or find user:",
+                createError
+              );
+            }
           }
         }
       }
@@ -273,6 +277,7 @@ export function useDatabase() {
       if (error) {
         console.error("[updateTask]", error);
         // Revert optimistic update? For now just log
+        throw error;
       }
     } else {
       // INSERT
@@ -288,6 +293,7 @@ export function useDatabase() {
       if (error) {
         console.error("[insertTask]", error);
         setTasks((prev) => prev.filter((t) => t.id !== tempId)); // Remove temp task on error
+        throw error;
       } else {
         // Replace temp task with real one (with real ID and relations)
         const inserted = dbToTask(data);
@@ -305,7 +311,10 @@ export function useDatabase() {
       .from("TaskItem")
       .update({ completed: nextCompleted })
       .eq("id", id);
-    if (error) console.error("[toggleTask]", error);
+    if (error) {
+      console.error("[toggleTask]", error);
+      throw error;
+    }
   }, []);
 
   // Archive Task
@@ -317,14 +326,20 @@ export function useDatabase() {
       .update({ archived })
       .eq("id", id);
 
-    if (error) console.error("[archiveTask]", error);
+    if (error) {
+      console.error("[archiveTask]", error);
+      throw error;
+    }
   }, []);
 
   // Delete task
   const deleteTask = useCallback(async (id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id)); // remove immediately
     const { error } = await supabase.from("TaskItem").delete().eq("id", id);
-    if (error) console.error("[deleteTask]", error);
+    if (error) {
+      console.error("[deleteTask]", error);
+      throw error;
+    }
   }, []);
 
   return {
