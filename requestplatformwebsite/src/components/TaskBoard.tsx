@@ -14,6 +14,8 @@ export default function TaskBoard({
   onArchive,
   onBatchUpdate,
   onUpdate,
+  onClaim,
+  currentUserName,
 }: {
   tasks: TaskItem[];
   onToggle: (id: string) => void;
@@ -25,6 +27,8 @@ export default function TaskBoard({
     update: { completed?: boolean; subteam?: Subteam; priority?: Priority }
   ) => Promise<void>;
   onUpdate: (task: TaskItem) => Promise<void>;
+  onClaim?: (id: string) => void;
+  currentUserName?: string;
 }) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   React.useEffect(() => {
@@ -102,7 +106,20 @@ export default function TaskBoard({
     }
   };
 
-  // Batch operations bar component (removed require)
+  // Render task card helper
+  const renderTaskCard = (task: TaskItem) => (
+    <TaskCard
+      task={task}
+      onToggle={onToggle}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      onArchive={onArchive}
+      onClaim={onClaim}
+      currentUserName={currentUserName}
+      selected={isSelected(task.id)}
+      onSelect={handleSelect}
+    />
+  );
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -131,15 +148,7 @@ export default function TaskBoard({
                   {unassigned.map((t, i) =>
                     shouldDisableDrag(t.id) ? (
                       <div key={t.id}>
-                        <TaskCard
-                          task={t}
-                          onToggle={onToggle}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onArchive={onArchive}
-                          selected={isSelected(t.id)}
-                          onSelect={handleSelect}
-                        />
+                        {renderTaskCard(t)}
                       </div>
                     ) : (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
@@ -149,15 +158,7 @@ export default function TaskBoard({
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <TaskCard
-                              task={t}
-                              onToggle={onToggle}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onArchive={onArchive}
-                              selected={isSelected(t.id)}
-                              onSelect={handleSelect}
-                            />
+                            {renderTaskCard(t)}
                           </div>
                         )}
                       </Draggable>
@@ -185,15 +186,7 @@ export default function TaskBoard({
                   {assigned.map((t, i) =>
                     shouldDisableDrag(t.id) ? (
                       <div key={t.id}>
-                        <TaskCard
-                          task={t}
-                          onToggle={onToggle}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onArchive={onArchive}
-                          selected={isSelected(t.id)}
-                          onSelect={handleSelect}
-                        />
+                        {renderTaskCard(t)}
                       </div>
                     ) : (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
@@ -203,15 +196,7 @@ export default function TaskBoard({
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <TaskCard
-                              task={t}
-                              onToggle={onToggle}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onArchive={onArchive}
-                              selected={isSelected(t.id)}
-                              onSelect={handleSelect}
-                            />
+                            {renderTaskCard(t)}
                           </div>
                         )}
                       </Draggable>
@@ -239,15 +224,7 @@ export default function TaskBoard({
                   {completed.map((t, i) =>
                     shouldDisableDrag(t.id) ? (
                       <div key={t.id}>
-                        <TaskCard
-                          task={t}
-                          onToggle={onToggle}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onArchive={onArchive}
-                          selected={isSelected(t.id)}
-                          onSelect={handleSelect}
-                        />
+                        {renderTaskCard(t)}
                       </div>
                     ) : (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
@@ -257,15 +234,7 @@ export default function TaskBoard({
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <TaskCard
-                              task={t}
-                              onToggle={onToggle}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onArchive={onArchive}
-                              selected={isSelected(t.id)}
-                              onSelect={handleSelect}
-                            />
+                            {renderTaskCard(t)}
                           </div>
                         )}
                       </Draggable>
