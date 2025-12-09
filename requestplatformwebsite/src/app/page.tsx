@@ -34,11 +34,15 @@ export default function Page() {
     deleteTask,
     archiveTask,
     batchUpdateTasks,
+    claimTask,
   } = useDatabase();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Get current user's display name from session
+  const currentUserName = session?.user?.name ?? undefined;
 
   const filteredTasks = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -93,6 +97,22 @@ export default function Page() {
     } catch (err) {
       console.error("[handleArchive]", err);
       toast.error("Failed to change archive state");
+    }
+  };
+
+  // Handle claiming a task - assigns the current user to the task
+  const handleClaimTask = async (taskId: string) => {
+    if (!currentUserName) {
+      toast.error("You must be logged in to claim a task");
+      return;
+    }
+    
+    try {
+      await claimTask(taskId, currentUserName);
+      toast.success("Task claimed successfully!");
+    } catch (err) {
+      console.error("[handleClaimTask]", err);
+      toast.error("Failed to claim task");
     }
   };
 
@@ -213,6 +233,8 @@ export default function Page() {
             onArchive={handleArchive}
             onBatchUpdate={batchUpdateTasks}
             onUpdate={upsertTask}
+            onClaim={handleClaimTask}
+            currentUserName={currentUserName}
           />
 
           <ArchivedSection
@@ -238,6 +260,10 @@ export default function Page() {
               </li>
               <li>
                 Click a task's <em>Complete</em> button to toggle completion.
+              </li>
+              <li>
+                Click <em>Claim</em> on an unassigned task to assign it to yourself.
+                The task will move to the Assigned column displaying your name.
               </li>
               <li>
                 Use <em>Edit</em> or <em>Delete</em> on a task card to modify or
