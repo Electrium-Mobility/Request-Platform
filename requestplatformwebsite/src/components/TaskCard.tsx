@@ -91,8 +91,13 @@ export default function TaskCard({
               <div
               style={{
                 background: "#333",
-                display:"flex",
-                alignItems: "center"
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                padding: "12px 20px",
+                borderRadius: "8px",
+                gap: "16px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
               }}>
                 Deleted {task.title}
                 <button
