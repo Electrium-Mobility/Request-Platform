@@ -4,6 +4,7 @@ import styles from "@/styles/TaskCard.module.css";
 import checkboxStyles from "@/styles/BatchSelectCheckbox.module.css";
 import { TaskItem } from "@/lib/types";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import toast from "react-hot-toast";
 
 function IconCheck() {
   return (
@@ -53,20 +54,24 @@ function IconClaim() {
 
 export default function TaskCard({
   task,
+  index = 0,
   onToggle,
   onEdit,
   onDelete,
   onArchive,
+  onUndo = () => {},
   onClaim,
   currentUserName,
   selected = false,
   onSelect,
 }: {
   task: TaskItem;
+  index?: number;
   onToggle: (id: string) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
+  onUndo?: (item: TaskItem, index: number) => void;
   onClaim?: (id: string) => void;
   currentUserName?: string;
   selected?: boolean;
@@ -97,6 +102,25 @@ export default function TaskCard({
         onConfirm={() => {
           onDelete(task.id);
           setConfirming(false);
+
+          toast.custom(
+            (t) => (
+              <div className={styles.toastContainer}>
+                Deleted {task.title}
+                <button
+                  className="btn ghost"
+                  aria-label="Undo delete"
+                  onClick={() => {
+                    onUndo(task, index);
+                    toast.dismiss(t.id);
+                  }}
+                >
+                  Undo?
+                </button>
+              </div>
+            ),
+            { duration: 10000 }
+          );
         }}
       />
     );
