@@ -44,6 +44,14 @@ function IconUnarchive() {
   );
 }
 
+function IconClaim() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.icon} aria-hidden="true">
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+    </svg>
+  );
+}
+
 export default function TaskCard({
   task,
   index = 0,
@@ -52,6 +60,8 @@ export default function TaskCard({
   onDelete,
   onArchive,
   onUndo = () => {},
+  onClaim,
+  currentUserName,
   selected = false,
   onSelect,
 }: {
@@ -62,19 +72,26 @@ export default function TaskCard({
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
   onUndo?: (item: TaskItem, index: number) => void;
+  onClaim?: (id: string) => void;
+  currentUserName?: string;
   selected?: boolean;
   onSelect?: (id: string, checked: boolean) => void;
 }) {
-  const [idHover, setHover] = useState(-1);
   const [confirming, setConfirming] = useState(false);
+  const [claiming, setClaiming] = useState(false);
 
-  function enableHover(id: number) {
-    setHover(id);
-  }
+  // Task can be claimed if it has no assignee, is not archived or completed, and user is logged in
+  const canClaim = !task.assignee && !task.archived && !task.completed && onClaim && currentUserName;
 
-  function disableHover() {
-    setHover(-1);
-  }
+  const handleClaim = async () => {
+    if (!canClaim || claiming) return;
+    setClaiming(true);
+    try {
+      await onClaim(task.id);
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   if (confirming) {
     return (
@@ -113,9 +130,23 @@ export default function TaskCard({
       className={`panel ${styles.card}`}
       style={{ animation: "fadeInUp 0.35s ease both" }}
     >
-      <div className={styles.row}>
-        <div className={styles.titleBox}>
-          <h3 className={styles.title}>{task.title}</h3>
+      {/* Top Section */}
+      <div className={styles.topSection}>
+        {/* Left Content: Checkbox, Title, Tags */}
+        <div className={styles.leftContent}>
+          <div className={styles.titleRow}>
+            {onSelect && (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => onSelect(task.id, e.target.checked)}
+                title="Select for batch operation"
+                aria-label={`Select ${task.title} for batch operation`}
+                className={checkboxStyles.checkbox}
+              />
+            )}
+            <h3 className={styles.title}>{task.title}</h3>
+          </div>
           <div className={styles.tags}>
             <span className={`${styles.tag} ${styles.subteam}`}>
               {task.subteam}
@@ -134,90 +165,103 @@ export default function TaskCard({
             </span>
           </div>
         </div>
-        <div className={styles.actions}>
-          {onSelect && (
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={(e) => onSelect(task.id, e.target.checked)}
-              title="Select for batch operation"
-              aria-label={`Select ${task.title} for batch operation`}
-              className={checkboxStyles.checkbox}
-            />
+
+        {/* Right Content: Meta Info */}
+        <div className={styles.rightContent}>
+          {task.assignee && (
+            <span>
+              Assignee: <strong>{task.assignee}</strong>
+            </span>
           )}
-          {!task.archived && (
-            <>
-              <button
-                className="btn ghost"
-                title={task.completed ? "Mark uncompleted" : "Mark completed"}
-                onClick={() => onToggle(task.id)}
-                onMouseOver={() => enableHover(0)}
-                onMouseOut={() => disableHover()}
-              >
-                <IconCheck />{" "}
-                {idHover === 0
-                  ? task.completed
-                    ? "Uncomplete"
-                    : "Complete"
-                  : null}
-              </button>
-              {task.completed && (
-                <button
-                  className="btn ghost"
-                  title="Archive Task"
-                  onClick={() => onArchive(task.id, true)}
-                  onMouseOver={() => enableHover(1)}
-                  onMouseOut={() => disableHover()}
-                >
-                  <IconArchive /> {idHover === 1 ? "Archive" : null}
-                </button>
-              )}
-            </>
+          {task.dueDate && (
+            <span>
+              Due:{" "}
+              <strong>{new Date(task.dueDate).toLocaleDateString()}</strong>
+            </span>
           )}
-          {task.archived && (
-            <button
-              className="btn ghost"
-              title="Unarchive Task"
-              onClick={() => onArchive(task.id, false)}
-              onMouseOver={() => enableHover(2)}
-              onMouseOut={() => disableHover()}
-            >
-              <IconUnarchive /> {idHover === 2 ? "Unarchive" : null}
-            </button>
-          )}
-          <button
-            className="btn ghost"
-            title="Edit"
-            onClick={() => onEdit(task)}
-            onMouseOver={() => enableHover(3)}
-            onMouseOut={() => disableHover()}
-          >
-            <IconEdit /> {idHover === 3 ? "Edit" : null}
-          </button>
-          <button
-            className="btn ghost"
-            title="Delete"
-            onClick={() => setConfirming(true)}
-            onMouseOver={() => enableHover(4)}
-            onMouseOut={() => disableHover()}
-          >
-            <IconTrash /> {idHover === 4 ? "Delete" : null}
-          </button>
+          <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
         </div>
       </div>
+
+      {/* Middle: Description */}
       {task.description && <p className={styles.desc}>{task.description}</p>}
-      <div className={styles.meta}>
-        {task.assignee && (
-          <span>
-            Assignee: <strong>{task.assignee}</strong>
-          </span>
+
+      {/* Bottom: Action Buttons */}
+      <div className={styles.actionButtons}>
+        {/* Claim Button - only show for unassigned, non-archived tasks */}
+        {canClaim && (
+          <button
+            className="btn ghost"
+            title="Claim this task"
+            aria-label="Claim Task"
+            onClick={handleClaim}
+            disabled={claiming}
+            style={{ 
+              color: claiming ? '#666' : '#00a651',
+              cursor: claiming ? 'not-allowed' : 'pointer'
+            }}
+          >
+            <IconClaim />
+            <span className={styles.btnText}>
+              {claiming ? "Claiming..." : "Claim"}
+            </span>
+          </button>
         )}
-        {task.dueDate && (
-          <span>
-            Due: <strong>{new Date(task.dueDate).toLocaleDateString()}</strong>
-          </span>
+        
+        {!task.archived && (
+          <>
+            <button
+              className="btn ghost"
+              title={task.completed ? "Mark uncompleted" : "Mark completed"}
+              onClick={() => onToggle(task.id)}
+            >
+              <IconCheck />
+              <span className={styles.btnText}>
+                {task.completed ? "Uncomplete" : "Complete"}
+              </span>
+            </button>
+            {task.completed && (
+              <button
+                className="btn ghost"
+                title="Archive Task"
+                aria-label="Archive Task"
+                onClick={() => onArchive(task.id, true)}
+              >
+                <IconArchive />
+                <span className={styles.btnText}>Archive</span>
+              </button>
+            )}
+          </>
         )}
-        <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
+        {task.archived && (
+          <button
+            className="btn ghost"
+            title="Unarchive Task"
+            aria-label="Unarchive Task"
+            onClick={() => onArchive(task.id, false)}
+          >
+            <IconUnarchive />
+            <span className={styles.btnText}>Unarchive</span>
+          </button>
+        )}
+        <button
+          className="btn ghost"
+          title="Edit"
+          aria-label="Edit Task"
+          onClick={() => onEdit(task)}
+        >
+          <IconEdit />
+          <span className={styles.btnText}>Edit</span>
+        </button>
+        <button
+          className="btn ghost"
+          title="Delete"
+          aria-label="Delete Task"
+          onClick={() => setConfirming(true)}
+        >
+          <IconTrash />
+          <span className={styles.btnText}>Delete</span>
+        </button>
       </div>
     </div>
   );

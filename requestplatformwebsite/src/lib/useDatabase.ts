@@ -115,6 +115,102 @@ export function useDatabase() {
     };
   }, [fetchTasks, fetchSingleTask]);
 
+  // Claim a task - assigns the current user to an unassigned task
+  const claimTask = useCallback(async (taskId: string, userName: string) => {
+    if (!userName || !userName.trim()) {
+      throw new Error("User name is required to claim a task");
+    }
+
+    const name = userName.trim();
+
+    // Optimistic update - set assignee immediately
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId ? { ...t, assignee: name } : t
+      )
+    );
+
+    // Resolve username to user ID (or create user if needed)
+    let assigneeId = null;
+
+    // Try to find existing user
+    const { data: existingUser } = await supabase
+      .from("user")
+      .select("id")
+      .eq("username", name)
+      .single();
+
+    if (existingUser) {
+      assigneeId = existingUser.id;
+    } else {
+      // Retry fetching user in case it was created concurrently
+      const { data: retryUser1 } = await supabase
+        .from("user")
+        .select("id")
+        .eq("username", name)
+        .single();
+
+      if (retryUser1) {
+        assigneeId = retryUser1.id;
+      } else {
+        // Create user if still not exists
+        const { data: newUser, error: createError } = await supabase
+          .from("user")
+          .insert({ username: name })
+          .select("id")
+          .single();
+
+        if (!createError && newUser) {
+          assigneeId = newUser.id;
+        } else {
+          // If insert failed (e.g., unique constraint), try fetching again
+          const { data: retryUser2 } = await supabase
+            .from("user")
+            .select("id")
+            .eq("username", name)
+            .single();
+
+          if (retryUser2) {
+            assigneeId = retryUser2.id;
+          } else {
+            console.error("[claimTask] Failed to resolve user:", createError);
+            // Revert optimistic update
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === taskId ? { ...t, assignee: undefined, assigneeId: undefined } : t
+              )
+            );
+            throw new Error("Failed to resolve user for claim");
+          }
+        }
+      }
+    }
+
+    // Update the task in database
+    const { error: updateError } = await supabase
+      .from("TaskItem")
+      .update({ assignee_id: assigneeId })
+      .eq("id", taskId);
+
+    if (updateError) {
+      console.error("[claimTask]", updateError);
+      // Revert optimistic update
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? { ...t, assignee: undefined, assigneeId: undefined } : t
+        )
+      );
+      throw updateError;
+    }
+
+    // Update local state with assigneeId
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId ? { ...t, assignee: name, assigneeId } : t
+      )
+    );
+  }, []);
+
   // Batch update multiple tasks
   const batchUpdateTasks = useCallback(
     async (
@@ -122,13 +218,6 @@ export function useDatabase() {
       update: { completed?: boolean; subteam?: Subteam; priority?: Priority }
     ) => {
       if (ids.length === 0) return;
-
-      // Store previous state for rollback
-      // Use a function to get current tasks to avoid stale closure if we used 'tasks' dependency
-      // But since we are inside a hook, we need to be careful.
-      // We'll rely on 'setTasks' functional update for state, but for rollback we need the data.
-      // To simplify, we'll just use optimistic updates and refetch if error, or just accept 'tasks' as dependency.
-      // Given 'tasks' changes often, we might want to optimize, but for now adding 'tasks' to dependency array is correct.
 
       const previousTasks = tasks.filter((t) => ids.includes(t.id));
 
@@ -158,6 +247,7 @@ export function useDatabase() {
             return prevTask || t;
           })
         );
+        throw error;
       }
     },
     [tasks]
@@ -173,7 +263,7 @@ export function useDatabase() {
       description: payload.description ?? undefined,
       subteam: payload.subteam,
       priority: payload.priority,
-      assignee: payload.assignee ?? undefined, // Display name
+      assignee: payload.assignee ?? undefined,
       dueDate: payload.dueDate ?? undefined,
       completed: payload.completed ?? false,
       createdAt: new Date().toISOString(),
@@ -200,7 +290,6 @@ export function useDatabase() {
     let assigneeId = null;
     if (payload.assignee && payload.assignee.trim()) {
       const name = payload.assignee.trim();
-      // 1. Try to find user
       const { data: existingUser } = await supabase
         .from("user")
         .select("id")
@@ -210,19 +299,15 @@ export function useDatabase() {
       if (existingUser) {
         assigneeId = existingUser.id;
       } else {
-        // 2. Try to select again to ensure no race condition
-        // If still not found, insert
-        // Ideally we should rely on DB constraint, but here we double check
         const { data: retryUser } = await supabase
           .from("user")
           .select("id")
           .eq("username", name)
           .single();
-          
+
         if (retryUser) {
-           assigneeId = retryUser.id;
+          assigneeId = retryUser.id;
         } else {
-          // 3. Create user if not exists
           const { data: newUser, error: createError } = await supabase
             .from("user")
             .insert({ username: name })
@@ -232,20 +317,20 @@ export function useDatabase() {
           if (!createError && newUser) {
             assigneeId = newUser.id;
           } else {
-             // If insert failed, it might be because another client inserted it just now
-             // (assuming unique constraint exists or will be added)
-             // Try fetching one last time
-             const { data: finalUser } = await supabase
+            const { data: finalUser } = await supabase
               .from("user")
               .select("id")
               .eq("username", name)
               .single();
-              
-             if (finalUser) {
-               assigneeId = finalUser.id;
-             } else {
-               console.error("[upsertTask] Failed to create or find user:", createError);
-             }
+
+            if (finalUser) {
+              assigneeId = finalUser.id;
+            } else {
+              console.error(
+                "[upsertTask] Failed to create or find user:",
+                createError
+              );
+            }
           }
         }
       }
@@ -264,7 +349,6 @@ export function useDatabase() {
     }
 
     if (payload.id) {
-      // UPDATE
       const { error } = await supabase
         .from("TaskItem")
         .update(dbPayload)
@@ -272,10 +356,9 @@ export function useDatabase() {
 
       if (error) {
         console.error("[updateTask]", error);
-        // Revert optimistic update? For now just log
+        throw error;
       }
     } else {
-      // INSERT
       const { data, error } = await supabase
         .from("TaskItem")
         .insert({
@@ -287,9 +370,9 @@ export function useDatabase() {
 
       if (error) {
         console.error("[insertTask]", error);
-        setTasks((prev) => prev.filter((t) => t.id !== tempId)); // Remove temp task on error
+        setTasks((prev) => prev.filter((t) => t.id !== tempId));
+        throw error;
       } else {
-        // Replace temp task with real one (with real ID and relations)
         const inserted = dbToTask(data);
         setTasks((prev) => prev.map((t) => (t.id === tempId ? inserted : t)));
       }
@@ -305,7 +388,10 @@ export function useDatabase() {
       .from("TaskItem")
       .update({ completed: nextCompleted })
       .eq("id", id);
-    if (error) console.error("[toggleTask]", error);
+    if (error) {
+      console.error("[toggleTask]", error);
+      throw error;
+    }
   }, []);
 
   // Archive Task
@@ -317,14 +403,20 @@ export function useDatabase() {
       .update({ archived })
       .eq("id", id);
 
-    if (error) console.error("[archiveTask]", error);
+    if (error) {
+      console.error("[archiveTask]", error);
+      throw error;
+    }
   }, []);
 
   // Delete task
   const deleteTask = useCallback(async (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id)); // remove immediately
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     const { error } = await supabase.from("TaskItem").delete().eq("id", id);
-    if (error) console.error("[deleteTask]", error);
+    if (error) {
+      console.error("[deleteTask]", error);
+      throw error;
+    }
   }, []);
 
   return {
@@ -335,5 +427,6 @@ export function useDatabase() {
     deleteTask,
     archiveTask,
     batchUpdateTasks,
+    claimTask,
   };
 }
