@@ -43,12 +43,22 @@ function IconUnarchive() {
   );
 }
 
+function IconClaim() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.icon} aria-hidden="true">
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+    </svg>
+  );
+}
+
 export default function TaskCard({
   task,
   onToggle,
   onEdit,
   onDelete,
   onArchive,
+  onClaim,
+  currentUserName,
   selected = false,
   onSelect,
 }: {
@@ -57,10 +67,26 @@ export default function TaskCard({
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
+  onClaim?: (id: string) => void;
+  currentUserName?: string;
   selected?: boolean;
   onSelect?: (id: string, checked: boolean) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+
+  // Task can be claimed if it has no assignee, is not archived or completed, and user is logged in
+  const canClaim = !task.assignee && !task.archived && !task.completed && onClaim && currentUserName;
+
+  const handleClaim = async () => {
+    if (!canClaim || claiming) return;
+    setClaiming(true);
+    try {
+      await onClaim(task.id);
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   if (confirming) {
     return (
@@ -138,6 +164,26 @@ export default function TaskCard({
 
       {/* Bottom: Action Buttons */}
       <div className={styles.actionButtons}>
+        {/* Claim Button - only show for unassigned, non-archived tasks */}
+        {canClaim && (
+          <button
+            className="btn ghost"
+            title="Claim this task"
+            aria-label="Claim Task"
+            onClick={handleClaim}
+            disabled={claiming}
+            style={{ 
+              color: claiming ? '#666' : '#00a651',
+              cursor: claiming ? 'not-allowed' : 'pointer'
+            }}
+          >
+            <IconClaim />
+            <span className={styles.btnText}>
+              {claiming ? "Claiming..." : "Claim"}
+            </span>
+          </button>
+        )}
+        
         {!task.archived && (
           <>
             <button
