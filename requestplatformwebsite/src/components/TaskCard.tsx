@@ -88,29 +88,22 @@ export default function TaskCard({
 
           toast.custom(
             (t) => (
-              <div
-              style={{
-                background: "#333",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                padding: "12px 20px",
-                borderRadius: "8px",
-                gap: "16px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-              }}>
+              <div className={styles.toastContainer}>
                 Deleted {task.title}
                 <button
-                  className="btn btn ghost"
+                  className="btn ghost"
+                  aria-label="Undo delete"
                   onClick={() => {
                     onUndo(task, index);
                     toast.dismiss(t.id);
                   }}
-                >Undo?</button>
+                >
+                  Undo?
+                </button>
               </div>
-            ), 
+            ),
             { duration: 10000 }
-          )
+          );
         }}
       />
     );
