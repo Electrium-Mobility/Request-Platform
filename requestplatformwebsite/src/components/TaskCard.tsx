@@ -91,7 +91,7 @@ export default function TaskCard({
               <div className={styles.toastContainer}>
                 Deleted {task.title}
                 <button
-                  className="btn btn ghost"
+                  className="btn ghost"
                   aria-label="Undo delete"
                   onClick={() => {
                     onUndo(task, index);
