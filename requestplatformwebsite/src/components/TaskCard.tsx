@@ -46,22 +46,22 @@ function IconUnarchive() {
 
 export default function TaskCard({
   task,
-  index,
+  index = 0,
   onToggle,
   onEdit,
   onDelete,
   onArchive,
-  onUndo,
+  onUndo = () => {},
   selected = false,
   onSelect,
 }: {
   task: TaskItem;
-  index: number;
+  index?: number;
   onToggle: (id: string) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
-  onUndo: (item: TaskItem, index: number) => void;
+  onUndo?: (item: TaskItem, index: number) => void;
   selected?: boolean;
   onSelect?: (id: string, checked: boolean) => void;
 }) {
