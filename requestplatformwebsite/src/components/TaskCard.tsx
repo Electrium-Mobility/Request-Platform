@@ -82,7 +82,7 @@ export default function TaskCard({
     if (!canClaim || claiming) return;
     setClaiming(true);
     try {
-      onClaim(task.id);
+      await onClaim(task.id);
     } finally {
       setClaiming(false);
     }
