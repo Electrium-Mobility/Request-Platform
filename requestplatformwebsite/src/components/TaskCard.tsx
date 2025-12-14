@@ -75,8 +75,8 @@ export default function TaskCard({
   const [confirming, setConfirming] = useState(false);
   const [claiming, setClaiming] = useState(false);
 
-  // Task can be claimed if it has no assignee and user is logged in
-  const canClaim = !task.assignee && !task.archived && onClaim && currentUserName;
+  // Task can be claimed if it has no assignee, is not archived or completed, and user is logged in
+  const canClaim = !task.assignee && !task.archived && !task.completed && onClaim && currentUserName;
 
   const handleClaim = async () => {
     if (!canClaim || claiming) return;
