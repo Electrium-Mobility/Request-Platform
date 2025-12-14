@@ -143,34 +143,45 @@ export function useDatabase() {
     if (existingUser) {
       assigneeId = existingUser.id;
     } else {
-      // Create user if not exists
-      const { data: newUser, error: createError } = await supabase
+      // Retry fetching user in case it was created concurrently
+      const { data: retryUser1 } = await supabase
         .from("user")
-        .insert({ username: name })
         .select("id")
+        .eq("username", name)
         .single();
 
-      if (!createError && newUser) {
-        assigneeId = newUser.id;
+      if (retryUser1) {
+        assigneeId = retryUser1.id;
       } else {
-        // If insert failed (e.g., unique constraint), try fetching again
-        const { data: retryUser } = await supabase
+        // Create user if still not exists
+        const { data: newUser, error: createError } = await supabase
           .from("user")
+          .insert({ username: name })
           .select("id")
-          .eq("username", name)
           .single();
 
-        if (retryUser) {
-          assigneeId = retryUser.id;
+        if (!createError && newUser) {
+          assigneeId = newUser.id;
         } else {
-          console.error("[claimTask] Failed to resolve user:", createError);
-          // Revert optimistic update
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === taskId ? { ...t, assignee: undefined, assigneeId: undefined } : t
-            )
-          );
-          throw new Error("Failed to resolve user for claim");
+          // If insert failed (e.g., unique constraint), try fetching again
+          const { data: retryUser2 } = await supabase
+            .from("user")
+            .select("id")
+            .eq("username", name)
+            .single();
+
+          if (retryUser2) {
+            assigneeId = retryUser2.id;
+          } else {
+            console.error("[claimTask] Failed to resolve user:", createError);
+            // Revert optimistic update
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === taskId ? { ...t, assignee: undefined, assigneeId: undefined } : t
+              )
+            );
+            throw new Error("Failed to resolve user for claim");
+          }
         }
       }
     }
