@@ -95,12 +95,13 @@ export default function TaskCard({
                 alignItems: "center"
               }}>
                 Deleted {task.title}
-                <button onClick={()=> {
-                  
+                <button
+                  className="btn btn ghost"
+                  onClick={() => {
                     onUndo(task, index);
                     toast.dismiss(t.id);
-
-                }}>Undo?</button>
+                  }}
+                >Undo?</button>
               </div>
             ), 
             { duration: 10000 }
