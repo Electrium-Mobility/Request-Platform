@@ -20,7 +20,7 @@
 }
 .toastContainer {
   background: #333;
-  color: #fff;
+  color: var(--text);
   display: flex;
   align-items: center;
   padding: 12px 20px;
